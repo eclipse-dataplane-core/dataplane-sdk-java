@@ -7,10 +7,12 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 import org.eclipse.dataplane.logic.OnCompleted;
 import org.eclipse.dataplane.logic.OnPrepare;
 import org.eclipse.dataplane.logic.OnStart;
 import org.eclipse.dataplane.logic.OnStarted;
+import org.eclipse.dataplane.logic.OnTerminate;
 import org.eclipse.dataplane.port.DataPlaneSignalingApiController;
 import org.eclipse.dataplane.port.store.DataFlowStore;
 import org.eclipse.dataplane.port.store.InMemoryDataFlowStore;
@@ -30,6 +32,7 @@ public class Dataplane {
     private OnStart onStart = _m -> Result.failure(new UnsupportedOperationException("onStart is not implemented"));
     private OnStarted onStarted = _m -> Result.failure(new UnsupportedOperationException("onStarted is not implemented"));;
     private OnCompleted onCompleted = _m -> Result.failure(new UnsupportedOperationException("onCompleted is not implemented"));
+    private OnTerminate onTerminate = _m -> Result.failure(new UnsupportedOperationException("onTerminate is not implemented"));
 
     public static Builder newInstance() {
         return new Builder();
@@ -94,6 +97,17 @@ public class Dataplane {
     public Result<DataFlowStatusResponseMessage> status(String dataFlowId) {
         return store.findById(dataFlowId)
                 .map(f -> new DataFlowStatusResponseMessage(f.getId(), f.getState().name()));
+    }
+
+    public Result<Void> terminate(String dataFlowId, DataFlowTerminateMessage message) {
+        return store.findById(dataFlowId)
+                .map(dataFlow -> {
+                    dataFlow.transitionToTerminated(message.reason());
+                    return dataFlow;
+                })
+                .compose(onTerminate::action)
+                .compose(store::save)
+                .map(it -> null);
     }
 
     /**
@@ -202,6 +216,11 @@ public class Dataplane {
 
         public Builder onCompleted(OnCompleted onCompleted) {
             dataplane.onCompleted = onCompleted;
+            return this;
+        }
+
+        public Builder onTerminate(OnTerminate onTerminate) {
+            dataplane.onTerminate = onTerminate;
             return this;
         }
     }

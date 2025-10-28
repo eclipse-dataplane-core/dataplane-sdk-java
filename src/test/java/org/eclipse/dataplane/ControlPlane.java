@@ -8,7 +8,9 @@ import jakarta.ws.rs.PathParam;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 
+import java.net.http.HttpResponse;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -53,6 +55,10 @@ public class ControlPlane {
 
     public ValidatableResponse consumerStatus(String flowId) {
         return consumerClient.status(flowId);
+    }
+
+    public ValidatableResponse providerTerminate(String dataFlowId, DataFlowTerminateMessage terminateMessage) {
+        return providerClient.terminate(dataFlowId, terminateMessage);
     }
 
     public String providerCallbackAddress() {

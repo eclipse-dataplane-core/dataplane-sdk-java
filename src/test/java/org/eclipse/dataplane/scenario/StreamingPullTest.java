@@ -10,6 +10,7 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,10 +19,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.emptyList;
@@ -52,22 +56,18 @@ public class StreamingPullTest {
     }
 
     @Test
-    void shouldPullDataFromProvider() {
+    void shouldPullDataFromProvider_thenProviderTerminatesIt() {
         var transferType = "FileSystemStreaming-PULL";
         var processId = UUID.randomUUID().toString();
         var consumerProcessId = "consumer_" + processId;
-        var prepareMessage = new DataFlowPrepareMessage("theMessageId", "theParticipantId", "theCounterPartyId",
-                "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", controlPlane.consumerCallbackAddress(),
-                transferType, null);
+        var prepareMessage = prepareMessage(consumerProcessId, transferType);
 
         var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
         assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());
         assertThat(prepareResponse.dataAddress()).isNull();
 
         var providerProcessId = "provider_" + processId;
-        var startMessage = new DataFlowStartMessage("theMessageId", "theParticipantId", "theCounterPartyId",
-                "theDataspaceContext", providerProcessId, "theAgreementId", "theDatasetId", controlPlane.providerCallbackAddress(),
-                transferType, null);
+        var startMessage = startMessage(providerProcessId, transferType);
         var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
         assertThat(startResponse.state()).isEqualTo(STARTED.name());
         assertThat(startResponse.dataAddress()).isNotNull();
@@ -77,6 +77,26 @@ public class StreamingPullTest {
         await().untilAsserted(() -> {
             assertThat(consumerDataPlane.storage.toFile().listFiles()).hasSizeGreaterThan(20);
         });
+
+        controlPlane.providerTerminate(providerProcessId, new DataFlowTerminateMessage("a good reason")).statusCode(200);
+
+        await().untilAsserted(() -> {
+            var filesTransferred = Objects.requireNonNull(consumerDataPlane.storage.toFile().listFiles()).length;
+            Thread.sleep(1000L);
+            assertThat(consumerDataPlane.storage.toFile().listFiles()).hasSize(filesTransferred);
+        });
+    }
+
+    private DataFlowPrepareMessage prepareMessage(String consumerProcessId, String transferType) {
+        return new DataFlowPrepareMessage("theMessageId", "theParticipantId", "theCounterPartyId",
+                "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", controlPlane.consumerCallbackAddress(),
+                transferType, null);
+    }
+
+    private DataFlowStartMessage startMessage(String providerProcessId, String transferType) {
+        return new DataFlowStartMessage("theMessageId", "theParticipantId", "theCounterPartyId",
+                "theDataspaceContext", providerProcessId, "theAgreementId", "theDatasetId", controlPlane.providerCallbackAddress(),
+                transferType, null);
     }
 
     private class ConsumerDataPlane {
@@ -127,8 +147,10 @@ public class StreamingPullTest {
         private final Dataplane sdk = Dataplane.newInstance()
                 .id("provider")
                 .onStart(this::onStart)
+                .onTerminate(this::onTerminate)
                 .build();
         private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        private final Map<String, ScheduledFuture<?>> flows = new HashMap<>();
 
         public ProviderDataPlane() {
         }
@@ -140,7 +162,7 @@ public class StreamingPullTest {
         private Result<DataFlow> onStart(DataFlow dataFlow) {
             try {
                 var destinationDirectory = Files.createTempDirectory(dataFlow.getId());
-                executor.scheduleAtFixedRate(() -> {
+                var flow = executor.scheduleAtFixedRate(() -> {
                     var path = destinationDirectory.resolve(String.valueOf(UUID.randomUUID().toString()));
                     try {
                         Files.writeString(path, UUID.randomUUID().toString());
@@ -149,12 +171,23 @@ public class StreamingPullTest {
                     }
                 }, 0L, 100L, TimeUnit.MILLISECONDS);
 
+                flows.put(dataFlow.getId(), flow);
+
                 var dataAddress = new DataAddress("FileSystem", "directory", destinationDirectory.toString(), emptyList());
                 dataFlow.setDataAddress(dataAddress);
-                dataFlow.transitionToStarted();
+                dataFlow.transitionToStarted(); // TODO: state change should be done by the service
 
                 return Result.success(dataFlow);
             } catch (IOException e) {
+                return Result.failure(e);
+            }
+        }
+
+        private Result<DataFlow> onTerminate(DataFlow dataFlow) {
+            try {
+                flows.get(dataFlow.getId()).cancel(true);
+                return Result.success(dataFlow);
+            } catch (Exception e) {
                 return Result.failure(e);
             }
         }

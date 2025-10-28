@@ -5,6 +5,7 @@ import io.restassured.response.ValidatableResponse;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 
 import static io.restassured.RestAssured.given;
 
@@ -32,6 +33,16 @@ public class DataplaneClient {
                 .baseUri(baseUri)
                 .body(startMessage)
                 .post("/v1/dataflows/start")
+                .then()
+                .log().ifValidationFails();
+    }
+
+    public ValidatableResponse terminate(String dataFlowId, DataFlowTerminateMessage terminateMessage) {
+        return given()
+                .contentType(ContentType.JSON)
+                .baseUri(baseUri)
+                .body(terminateMessage)
+                .post("/v1/dataflows/{id}/terminate", dataFlowId)
                 .then()
                 .log().ifValidationFails();
     }

@@ -15,6 +15,7 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 import org.eclipse.dataplane.port.exception.DataFlowNotFoundException;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -49,6 +50,13 @@ public class DataPlaneSignalingApiController {
             return Response.accepted(response).build();
         }
         return Response.ok(response).build();
+    }
+
+    @POST
+    @Path("/{flowId}/terminate")
+    public Response terminate(@PathParam("flowId") String flowId, DataFlowTerminateMessage message) {
+        dataplane.terminate(flowId, message).orElseThrow(this::mapToWsRsException);
+        return Response.ok().build();
     }
 
     @POST

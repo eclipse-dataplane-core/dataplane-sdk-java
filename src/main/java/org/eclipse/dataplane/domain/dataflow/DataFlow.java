@@ -4,12 +4,15 @@ import org.eclipse.dataplane.domain.DataAddress;
 
 import java.util.Objects;
 
+// TODO: could it store the messages?
 public class DataFlow {
+
     private String id;
     private State state;
     private String transferType;
     private DataAddress dataAddress;
     private String callbackAddress;
+    private String terminationReason;
 
     public static DataFlow.Builder newInstance() {
         return new Builder();
@@ -49,6 +52,11 @@ public class DataFlow {
 
     public void transitionToCompleted() {
         state = State.COMPLETED;
+    }
+
+    public void transitionToTerminated(String reason) {
+        state = State.TERMINATED;
+        terminationReason = reason;
     }
 
     public boolean isPush() {
@@ -124,7 +132,8 @@ public class DataFlow {
         PREPARED,
         STARTING,
         STARTED,
-        COMPLETED
+        COMPLETED,
+        TERMINATED
     }
 }
 
