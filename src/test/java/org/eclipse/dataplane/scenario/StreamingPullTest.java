@@ -99,7 +99,7 @@ public class StreamingPullTest {
                 transferType, null);
     }
 
-    private class ConsumerDataPlane {
+    private static class ConsumerDataPlane {
 
         private final Path storage;
         private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
@@ -142,7 +142,7 @@ public class StreamingPullTest {
         }
     }
 
-    private class ProviderDataPlane {
+    private static class ProviderDataPlane {
 
         private final Dataplane sdk = Dataplane.newInstance()
                 .id("provider")
@@ -175,7 +175,6 @@ public class StreamingPullTest {
 
                 var dataAddress = new DataAddress("FileSystem", "directory", destinationDirectory.toString(), emptyList());
                 dataFlow.setDataAddress(dataAddress);
-                dataFlow.transitionToStarted(); // TODO: state change should be done by the service
 
                 return Result.success(dataFlow);
             } catch (IOException e) {

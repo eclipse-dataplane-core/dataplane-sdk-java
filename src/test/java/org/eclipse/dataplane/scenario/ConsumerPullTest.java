@@ -139,7 +139,6 @@ public class ConsumerPullTest {
 
                 var dataAddress = new DataAddress("FileSystem", "directory", destinationDirectory.toString(), emptyList());
                 dataFlow.setDataAddress(dataAddress);
-                dataFlow.transitionToStarted();
 
                 return Result.success(dataFlow);
             } catch (IOException e) {

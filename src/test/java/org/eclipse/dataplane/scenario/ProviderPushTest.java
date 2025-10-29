@@ -113,7 +113,6 @@ public class ProviderPushTest {
                 }
             });
 
-            dataFlow.transitionToStarted();
             return Result.success(dataFlow);
         }
 
@@ -135,8 +134,7 @@ public class ProviderPushTest {
                 var destinationFile = Files.createTempDirectory("consumer-dest").resolve(dataFlow.getId() + "-content");
                 var dataAddress = new DataAddress("FileSystem", "file", destinationFile.toString(), emptyList());
 
-                dataFlow.setDataAddress(dataAddress); // TODO: the destination data address and the data address tbu by the provider should be different?
-                dataFlow.transitionToPrepared();
+                dataFlow.setDataAddress(dataAddress);
 
                 return Result.success(dataFlow);
             } catch (IOException e) {

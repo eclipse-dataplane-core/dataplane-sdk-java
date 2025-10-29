@@ -9,7 +9,6 @@ import org.eclipse.dataplane.domain.dataflow.DataFlow;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
-import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.COMPLETED;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.PREPARED;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.STARTED;
 
@@ -100,7 +98,6 @@ public class StreamingPushTest {
                 }
             }, 0, 100L, TimeUnit.MILLISECONDS);
 
-            dataFlow.transitionToStarted();
             return Result.success(dataFlow);
         }
 
@@ -123,7 +120,6 @@ public class StreamingPushTest {
                 var dataAddress = new DataAddress("FileSystem", "folder", destinationFolder.toString(), emptyList());
 
                 dataFlow.setDataAddress(dataAddress);
-                dataFlow.transitionToPrepared();
 
                 return Result.success(dataFlow);
             } catch (IOException e) {
