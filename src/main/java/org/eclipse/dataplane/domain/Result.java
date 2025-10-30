@@ -1,5 +1,6 @@
 package org.eclipse.dataplane.domain;
 
+import java.util.NoSuchElementException;
 import java.util.function.Function;
 
 public abstract class Result<C> {
@@ -23,7 +24,9 @@ public abstract class Result<C> {
         }
     }
 
-    public abstract C orElseThrow() throws Throwable;
+    public abstract C getContent();
+
+    public abstract C orElseThrow() throws Exception;
 
     public abstract <X extends Throwable> C orElseThrow(Function<Exception, X> exceptionSupplier) throws X;
 
@@ -31,12 +34,25 @@ public abstract class Result<C> {
 
     public abstract <T> Result<T> compose(ExceptionThrowingFunction<C, Result<T>> transformValue);
 
+    public boolean succeeded() {
+        return this instanceof Result.Success<C>;
+    }
+
+    public boolean failed() {
+        return this instanceof Result.Failure<C>;
+    }
+
     private static class Success<C> extends Result<C> {
 
         private final C content;
 
         public Success(C content) {
             this.content = content;
+        }
+
+        @Override
+        public C getContent() {
+            return content;
         }
 
         @Override
@@ -69,6 +85,11 @@ public abstract class Result<C> {
         private final Exception exception;
         private Failure(Exception exception) {
             this.exception = exception;
+        }
+
+        @Override
+        public C getContent() {
+            throw new NoSuchElementException("The result has no content because it's failed", exception);
         }
 
         @Override

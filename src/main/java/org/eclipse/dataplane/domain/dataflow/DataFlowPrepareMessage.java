@@ -10,7 +10,7 @@ public record DataFlowPrepareMessage(
         String processId,
         String agreementId,
         String datasetId,
-        String callbackAddress,
+        String callbackAddress, // TODO: make URI!
         String transferType,
         DataAddress dataAddress
 ) {

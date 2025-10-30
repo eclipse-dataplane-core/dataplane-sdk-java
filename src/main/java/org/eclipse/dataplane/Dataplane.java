@@ -23,6 +23,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 public class Dataplane {
 
@@ -33,6 +34,7 @@ public class Dataplane {
     private OnStarted onStarted = _m -> Result.failure(new UnsupportedOperationException("onStarted is not implemented"));;
     private OnCompleted onCompleted = _m -> Result.failure(new UnsupportedOperationException("onCompleted is not implemented"));
     private OnTerminate onTerminate = _m -> Result.failure(new UnsupportedOperationException("onTerminate is not implemented"));
+    private final HttpClient httpClient = HttpClient.newHttpClient();
 
     public static Builder newInstance() {
         return new Builder();
@@ -111,36 +113,31 @@ public class Dataplane {
     }
 
     /**
-     * Notify the control plane that the data flow has been completed
+     * Notify the control plane that the data flow has been completed.
      *
      * @param dataFlowId
      */
-    public void notifyCompleted(String dataFlowId) {
-        store.findById(dataFlowId)
+    public Result<CompletableFuture<Void>> notifyCompleted(String dataFlowId) {
+        return store.findById(dataFlowId)
                 .map(dataFlow -> {
-                    try {
-                        var endpoint = dataFlow.getCallbackAddress() + "/transfers/" + dataFlow.getId() + "/dataflow/completed";
+                    var endpoint = dataFlow.getCallbackAddress() + "/transfers/" + dataFlow.getId() + "/dataflow/completed";
 
-                        var request = HttpRequest.newBuilder()
-                                .uri(URI.create(endpoint))
-                                .header("content-type", "application/json")
-                                .POST(HttpRequest.BodyPublishers.ofString("{}")) // TODO DataFlowCompletedMessage not defined
-                                .build();
+                    var request = HttpRequest.newBuilder()
+                            .uri(URI.create(endpoint))
+                            .header("content-type", "application/json")
+                            .POST(HttpRequest.BodyPublishers.ofString("{}")) // TODO DataFlowCompletedMessage not defined
+                            .build();
 
-                        var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.discarding());
+                    // TODO: handle failure
+                    // TODO: should this be done asynchronously? retry, and so on...
+                    return httpClient.sendAsync(request, HttpResponse.BodyHandlers.discarding())
+                            .thenApply(r -> {
+                                dataFlow.transitionToCompleted();
+                                store.save(dataFlow);
+                                return null;
+                            });
 
-                        // TODO: handle failure
-                        // TODO: should this be done asynchronously? retry, and so on...
-
-                        dataFlow.transitionToCompleted();
-                        store.save(dataFlow);
-
-                        // TODO: handle response
-                        return null;
-                    } catch (IOException | InterruptedException e) {
-                        e.printStackTrace();
-                        throw new RuntimeException(e);
-                    }
+                    // TODO: handle response
                 });
     }
 
