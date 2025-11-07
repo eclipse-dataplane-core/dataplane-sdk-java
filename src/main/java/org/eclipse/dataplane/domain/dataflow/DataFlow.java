@@ -2,6 +2,8 @@ package org.eclipse.dataplane.domain.dataflow;
 
 import org.eclipse.dataplane.domain.DataAddress;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 // TODO: could it store the messages?
@@ -10,9 +12,11 @@ public class DataFlow {
     private String id;
     private State state;
     private String transferType;
-    private DataAddress dataAddress;
     private String callbackAddress;
     private String terminationReason;
+    private List<String> labels;
+    private Map<String, Object> metadata;
+    private DataAddress dataAddress;
 
     public static DataFlow.Builder newInstance() {
         return new Builder();
@@ -115,6 +119,11 @@ public class DataFlow {
             return this;
         }
 
+        public Builder labels(List<String> labels) {
+            dataFlow.labels = labels;
+            return this;
+        }
+
         public Builder dataAddress(DataAddress dataAddress) {
             dataFlow.dataAddress = dataAddress;
             return this;
@@ -122,6 +131,11 @@ public class DataFlow {
 
         public Builder callbackAddress(String callbackAddress) {
             dataFlow.callbackAddress = callbackAddress;
+            return this;
+        }
+
+        public Builder metadata(Map<String, Object> metadata) {
+            dataFlow.metadata = metadata;
             return this;
         }
     }

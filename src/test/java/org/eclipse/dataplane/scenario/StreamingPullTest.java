@@ -29,6 +29,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.PREPARED;
@@ -90,7 +91,7 @@ public class StreamingPullTest {
     private DataFlowPrepareMessage prepareMessage(String consumerProcessId, String transferType) {
         return new DataFlowPrepareMessage("theMessageId", "theParticipantId", "theCounterPartyId",
                 "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", controlPlane.consumerCallbackAddress(),
-                transferType, null);
+                transferType, emptyList(), emptyMap());
     }
 
     private DataFlowStartMessage startMessage(String providerProcessId, String transferType) {

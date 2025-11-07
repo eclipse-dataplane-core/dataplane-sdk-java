@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.COMPLETED;
@@ -57,7 +58,7 @@ public class ProviderPushTest {
         var consumerProcessId = "consumer_" + processId;
         var prepareMessage = new DataFlowPrepareMessage("theMessageId", "theParticipantId", "theCounterPartyId",
                 "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", "theCallbackAddress",
-                transferType, null);
+                transferType, emptyList(), emptyMap());
 
         var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
         assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());

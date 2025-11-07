@@ -22,6 +22,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.PREPARED;
@@ -56,7 +57,7 @@ public class ConsumerPullTest {
         var consumerProcessId = "consumer_" + processId;
         var prepareMessage = new DataFlowPrepareMessage("theMessageId", "theParticipantId", "theCounterPartyId",
                 "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", controlPlane.consumerCallbackAddress(),
-                transferType, null);
+                transferType, emptyList(), emptyMap());
 
         var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
         assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());

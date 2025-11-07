@@ -16,6 +16,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.COMPLETED;
@@ -50,7 +52,7 @@ class DataplaneTest {
         @Test
         void shouldReturnFailedFuture_whenControlPlaneIsNotAvailable() {
             var dataplane = Dataplane.newInstance().onPrepare(Result::success).build();
-            dataplane.prepare(new DataFlowPrepareMessage("any", "any", "any", "any", "dataFlowId", "any", "any", controlPlane.baseUrl(), "Something-PUSH", null));
+            dataplane.prepare(createPrepareMessage());
             controlPlane.stop();
 
             var result = dataplane.notifyCompleted("dataFlowId");
@@ -64,7 +66,7 @@ class DataplaneTest {
             controlPlane.stubFor(post(anyUrl()).willReturn(aResponse().withStatus(500)));
 
             var dataplane = Dataplane.newInstance().onPrepare(Result::success).build();
-            dataplane.prepare(new DataFlowPrepareMessage("any", "any", "any", "any", "dataFlowId", "any", "any", controlPlane.baseUrl(), "Something-PUSH", null));
+            dataplane.prepare(createPrepareMessage());
 
             var result = dataplane.notifyCompleted("dataFlowId");
 
@@ -77,7 +79,7 @@ class DataplaneTest {
         void shouldTransitionToCompleted_whenControlPlaneRespondCorrectly() {
             controlPlane.stubFor(post(anyUrl()).willReturn(aResponse().withStatus(200)));
             var dataplane = Dataplane.newInstance().onPrepare(Result::success).build();
-            dataplane.prepare(new DataFlowPrepareMessage("any", "any", "any", "any", "dataFlowId", "any", "any", controlPlane.baseUrl(), "Something-PUSH", null));
+            dataplane.prepare(createPrepareMessage());
 
             var result = dataplane.notifyCompleted("dataFlowId");
 
@@ -98,13 +100,18 @@ class DataplaneTest {
                     .willReturn(aResponse().withStatus(200)));
 
             var dataplane = Dataplane.newInstance().onPrepare(Result::success).build();
-            dataplane.prepare(new DataFlowPrepareMessage("any", "any", "any", "any", "dataFlowId", "any", "any", controlPlane.baseUrl(), "Something-PUSH", null));
+            dataplane.prepare(createPrepareMessage());
 
             var result = dataplane.notifyCompleted("dataFlowId");
 
             assertThat(result.succeeded());
             assertThat(result.getContent()).succeedsWithin(5, TimeUnit.SECONDS);
             assertThat(dataplane.status("dataFlowId").getContent().state()).isEqualTo(COMPLETED.name());
+        }
+
+        private DataFlowPrepareMessage createPrepareMessage() {
+            return new DataFlowPrepareMessage("any", "any", "any", "any", "dataFlowId", "any", "any",
+                    controlPlane.baseUrl(), "Something-PUSH", emptyList(), emptyMap());
         }
 
         // TODO: retry case

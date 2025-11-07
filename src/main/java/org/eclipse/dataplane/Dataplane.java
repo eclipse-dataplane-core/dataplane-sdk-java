@@ -51,7 +51,8 @@ public class Dataplane {
         var initialDataFlow = DataFlow.newInstance()
                 .id(message.processId())
                 .state(DataFlow.State.INITIATING)
-                .dataAddress(message.dataAddress())
+                .labels(message.labels())
+                .metadata(message.metadata())
                 .callbackAddress(message.callbackAddress())
                 .transferType(message.transferType())
                 .build();
