@@ -66,7 +66,7 @@ public class ConsumerPullTest {
         var providerProcessId = "provider_" + processId;
         var startMessage = new DataFlowStartMessage("theMessageId", "theParticipantId", "theCounterPartyId",
                 "theDataspaceContext", providerProcessId, "theAgreementId", "theDatasetId", controlPlane.providerCallbackAddress(),
-                transferType, null);
+                transferType, null, emptyList(), emptyMap());
         var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
         assertThat(startResponse.state()).isEqualTo(STARTED.name());
         assertThat(startResponse.dataAddress()).isNotNull();

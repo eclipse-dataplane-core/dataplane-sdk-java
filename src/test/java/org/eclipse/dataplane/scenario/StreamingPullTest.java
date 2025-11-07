@@ -97,7 +97,7 @@ public class StreamingPullTest {
     private DataFlowStartMessage startMessage(String providerProcessId, String transferType) {
         return new DataFlowStartMessage("theMessageId", "theParticipantId", "theCounterPartyId",
                 "theDataspaceContext", providerProcessId, "theAgreementId", "theDatasetId", controlPlane.providerCallbackAddress(),
-                transferType, null);
+                transferType, null, emptyList(), emptyMap());
     }
 
     private static class ConsumerDataPlane {
