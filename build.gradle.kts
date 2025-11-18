@@ -27,7 +27,7 @@ dependencies {
     testImplementation("org.eclipse.jetty:jetty-server:12.1.2")
     testImplementation("org.glassfish.jersey.containers:jersey-container-servlet:3.1.11")
     testImplementation("org.glassfish.jersey.inject:jersey-hk2:3.1.11")
-    testImplementation("org.glassfish.jersey.media:jersey-media-json-jackson:3.1.11")
+    testImplementation("org.glassfish.jersey.media:jersey-media-json-jackson:4.0.0")
     testImplementation("org.mockito:mockito-core:5.20.0")
     testImplementation("org.slf4j:slf4j-simple:2.0.17")
     testImplementation("org.wiremock:wiremock-jetty12:3.13.1")
