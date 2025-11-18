@@ -1,12 +1,12 @@
 plugins {
     java
     `java-library`
-    signing
     `maven-publish`
-    id("com.vanniktech.maven.publish") version "0.34.0"
+    signing
+    id("com.vanniktech.maven.publish") version "0.35.0"
 }
 
-group = "org.eclipse.dataplane"
+group = "org.eclipse.dataplane-core"
 version = "0.0.1-SNAPSHOT"
 
 repositories {
@@ -59,8 +59,8 @@ mavenPublishing {
         }
         developers {
             developer {
-                name = "Andrea Bertagnolli"
-                email = "andreabertagnolli@think-it.io"
+                name = "Dataplane Core Dev"
+                email = "dataplane-core-dev@eclipse.org"
             }
         }
         scm {
