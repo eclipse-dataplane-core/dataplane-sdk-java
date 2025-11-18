@@ -23,7 +23,7 @@ dependencies {
     testImplementation("io.rest-assured:rest-assured:5.5.6")
     testImplementation("org.assertj:assertj-core:3.27.6")
     testImplementation("org.awaitility:awaitility:4.3.0")
-    testImplementation("org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.2")
+    testImplementation("org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.4")
     testImplementation("org.eclipse.jetty:jetty-server:12.1.2")
     val jerseyVersion = "4.0.0"
     testImplementation("org.glassfish.jersey.containers:jersey-container-servlet:${jerseyVersion}")
