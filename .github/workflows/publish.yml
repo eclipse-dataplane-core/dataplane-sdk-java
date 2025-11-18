@@ -48,7 +48,5 @@ jobs:
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.CENTRAL_SONATYPE_TOKEN_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.CENTRAL_SONATYPE_TOKEN_PASSWORD }}
-#          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_PRIVATE_KEY }}
-#          ORG_GRADLE_PROJECT_signingInMemoryKeyId: 4806AD23D870D294D19406EE1558CCF9B8C0CAE8
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_PASSPHRASE }}
         run: ./gradlew publishToMavenCentral --stacktrace -Psigning.gnupg.executable=gpg -Psigning.gnupg.passphrase="${{ secrets.GPG_PASSPHRASE }}"
