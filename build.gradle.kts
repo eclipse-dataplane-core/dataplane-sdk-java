@@ -1,9 +1,13 @@
 plugins {
-    id("java")
+    java
+    `java-library`
+    signing
+    `maven-publish`
+    id("com.vanniktech.maven.publish") version "0.34.0"
 }
 
 group = "org.eclipse.dataplane"
-version = "1.0-SNAPSHOT"
+version = "0.0.1-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -31,4 +35,37 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+signing {
+    useGpgCmd()
+    sign(publishing.publications)
+}
+
+mavenPublishing {
+    publishToMavenCentral(true)
+
+    signAllPublications()
+
+    pom {
+        name.set(project.name)
+        description.set("Dataplane Signaling SDK library")
+        url.set("https://github.com/eclipse-dataplane-core/dataplane-sdk-java")
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+            }
+        }
+        developers {
+            developer {
+                name = "Andrea Bertagnolli"
+                email = "andreabertagnolli@think-it.io"
+            }
+        }
+        scm {
+            url.set("https://github.com/eclipse-dataplane-core/dataplane-sdk-java")
+            connection.set("scm:git:git@github.com:eclipse-dataplane-core/dataplane-sdk-go.git")
+        }
+    }
 }
