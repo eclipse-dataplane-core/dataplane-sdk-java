@@ -14,12 +14,12 @@ repositories {
 }
 
 dependencies {
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.20.1")
     implementation("jakarta.ws.rs:jakarta.ws.rs-api:4.0.0")
 
     testImplementation(platform("org.junit:junit-bom:6.0.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testImplementation("com.fasterxml.jackson.core:jackson-databind:2.20.1")
     testImplementation("io.rest-assured:rest-assured:5.5.6")
     testImplementation("org.assertj:assertj-core:3.27.6")
     testImplementation("org.awaitility:awaitility:4.3.0")
