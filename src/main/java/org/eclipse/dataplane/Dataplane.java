@@ -17,6 +17,7 @@ import org.eclipse.dataplane.logic.OnStart;
 import org.eclipse.dataplane.logic.OnStarted;
 import org.eclipse.dataplane.logic.OnTerminate;
 import org.eclipse.dataplane.port.DataPlaneSignalingApiController;
+import org.eclipse.dataplane.port.exception.DataFlowNotifyCompletedFailed;
 import org.eclipse.dataplane.port.exception.DataplaneNotRegistered;
 import org.eclipse.dataplane.port.store.DataFlowStore;
 import org.eclipse.dataplane.port.store.InMemoryDataFlowStore;
@@ -28,11 +29,6 @@ import java.net.http.HttpResponse;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-
-import static java.util.concurrent.CompletableFuture.delayedExecutor;
 
 public class Dataplane {
 
@@ -135,36 +131,27 @@ public class Dataplane {
      *
      * @param dataFlowId
      */
-    public Result<CompletableFuture<Void>> notifyCompleted(String dataFlowId) {
+    public Result<Void> notifyCompleted(String dataFlowId) {
         return store.findById(dataFlowId)
-                .map(dataFlow -> transferDataFlowCompleted(dataFlow)
-                        .thenApply(r -> {
-                            dataFlow.transitionToCompleted();
-                            store.save(dataFlow);
-                            return null;
-                        }));
-    }
+                .compose(dataFlow -> {
+                    var endpoint = dataFlow.getCallbackAddress() + "/transfers/" + dataFlow.getId() + "/dataflow/completed";
 
-    private CompletableFuture<HttpResponse<Void>> transferDataFlowCompleted(DataFlow dataFlow) {
-        var endpoint = dataFlow.getCallbackAddress() + "/transfers/" + dataFlow.getId() + "/dataflow/completed";
+                    var request = HttpRequest.newBuilder()
+                            .uri(URI.create(endpoint))
+                            .header("content-type", "application/json")
+                            .POST(HttpRequest.BodyPublishers.ofString("{}")) // TODO DataFlowCompletedMessage not defined
+                            .build();
 
-        var request = HttpRequest.newBuilder()
-                .uri(URI.create(endpoint))
-                .header("content-type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString("{}")) // TODO DataFlowCompletedMessage not defined
-                .build();
+                    var response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
 
-        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.discarding())
-                .thenApply(r -> {
-                    var successful = r.statusCode() >= 200 && r.statusCode() < 300;
+                    var successful = response.statusCode() >= 200 && response.statusCode() < 300;
                     if (successful) {
-                        return CompletableFuture.completedFuture(r);
+                        dataFlow.transitionToCompleted();
+                        return store.save(dataFlow);
                     }
 
-                    return CompletableFuture.supplyAsync(() -> transferDataFlowCompleted(dataFlow), delayedExecutor(500, TimeUnit.MILLISECONDS)).thenCompose(Function.identity());
-                })
-                .exceptionally(CompletableFuture::failedFuture)
-                .thenCompose(Function.identity());
+                    return Result.failure(new DataFlowNotifyCompletedFailed(response));
+                });
     }
 
     /**

@@ -1,17 +1,17 @@
 package org.eclipse.dataplane;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.stubbing.Scenario;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.port.exception.DataFlowNotFoundException;
+import org.eclipse.dataplane.port.exception.DataFlowNotifyCompletedFailed;
 import org.eclipse.dataplane.port.exception.DataplaneNotRegistered;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.TimeUnit;
+import java.net.ConnectException;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.and;
@@ -52,7 +52,7 @@ class DataplaneTest {
 
             var result = dataplane.notifyCompleted("dataFlowId");
 
-            assertThat(result.failed());
+            assertThat(result.failed()).isTrue();
             assertThatThrownBy(result::orElseThrow).isExactlyInstanceOf(DataFlowNotFoundException.class);
         }
 
@@ -64,8 +64,8 @@ class DataplaneTest {
 
             var result = dataplane.notifyCompleted("dataFlowId");
 
-            assertThat(result.succeeded());
-            assertThat(result.getContent()).failsWithin(5, TimeUnit.SECONDS);
+            assertThat(result.failed()).isTrue();
+            assertThatThrownBy(result::orElseThrow).isExactlyInstanceOf(ConnectException.class);
         }
 
         @Test
@@ -77,8 +77,8 @@ class DataplaneTest {
 
             var result = dataplane.notifyCompleted("dataFlowId");
 
-            assertThat(result.succeeded());
-            assertThat(result.getContent()).failsWithin(5, TimeUnit.SECONDS);
+            assertThat(result.failed()).isTrue();
+            assertThatThrownBy(result::orElseThrow).isExactlyInstanceOf(DataFlowNotifyCompletedFailed.class);
             assertThat(dataplane.status("dataFlowId").getContent().state()).isNotEqualTo(COMPLETED.name());
         }
 
@@ -90,29 +90,7 @@ class DataplaneTest {
 
             var result = dataplane.notifyCompleted("dataFlowId");
 
-            assertThat(result.succeeded());
-            assertThat(result.getContent()).succeedsWithin(5, TimeUnit.SECONDS);
-            assertThat(dataplane.status("dataFlowId").getContent().state()).isEqualTo(COMPLETED.name());
-        }
-
-        @Test
-        void shouldRetryForCertainAmountOfCalls() {
-            controlPlane.stubFor(post(anyUrl()).inScenario("retry")
-                    .whenScenarioStateIs(Scenario.STARTED)
-                    .willReturn(aResponse().withStatus(500))
-                    .willSetStateTo("RETRY"));
-
-            controlPlane.stubFor(post(anyUrl()).inScenario("retry")
-                    .whenScenarioStateIs("RETRY")
-                    .willReturn(aResponse().withStatus(200)));
-
-            var dataplane = Dataplane.newInstance().onPrepare(Result::success).build();
-            dataplane.prepare(createPrepareMessage());
-
-            var result = dataplane.notifyCompleted("dataFlowId");
-
-            assertThat(result.succeeded());
-            assertThat(result.getContent()).succeedsWithin(5, TimeUnit.SECONDS);
+            assertThat(result.succeeded()).isTrue();
             assertThat(dataplane.status("dataFlowId").getContent().state()).isEqualTo(COMPLETED.name());
         }
 
@@ -120,8 +98,6 @@ class DataplaneTest {
             return new DataFlowPrepareMessage("any", "any", "any", "any", "dataFlowId", "any", "any",
                     controlPlane.baseUrl(), "Something-PUSH", emptyList(), emptyMap());
         }
-
-        // TODO: retry case
 
     }
 
