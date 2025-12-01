@@ -31,7 +31,7 @@ dependencies {
     testImplementation("org.glassfish.jersey.media:jersey-media-json-jackson:${jerseyVersion}")
     testImplementation("org.mockito:mockito-core:5.20.0")
     testImplementation("org.slf4j:slf4j-simple:2.0.17")
-    testImplementation("org.wiremock:wiremock-jetty12:3.13.1")
+    testImplementation("org.wiremock:wiremock-jetty12:3.13.2")
 }
 
 tasks.test {
