@@ -32,6 +32,12 @@ public class DataPlaneSignalingApiController {
         this.dataplane = dataplane;
     }
 
+    @GET
+    @Path("/")
+    public Response check() {
+        return Response.ok().build();
+    }
+
     @POST
     @Path("/prepare")
     public Response prepare(DataFlowPrepareMessage message) {
