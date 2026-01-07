@@ -38,6 +38,22 @@ public class DataFlow {
         return callbackAddress;
     }
 
+    public String getTransferType() {
+        return transferType;
+    }
+
+    public String getTerminationReason() {
+        return terminationReason;
+    }
+
+    public List<String> getLabels() {
+        return labels;
+    }
+
+    public Map<String, Object> getMetadata() {
+        return metadata;
+    }
+
     public void transitionToPrepared() {
         state = State.PREPARED;
     }
