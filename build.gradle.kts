@@ -20,7 +20,7 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:6.0.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testImplementation("io.rest-assured:rest-assured:5.5.6")
+    testImplementation("io.rest-assured:rest-assured:6.0.0")
     testImplementation("org.assertj:assertj-core:3.27.6")
     testImplementation("org.awaitility:awaitility:4.3.0")
     testImplementation("org.eclipse.jetty.ee10:jetty-ee10-servlet:12.1.5")
