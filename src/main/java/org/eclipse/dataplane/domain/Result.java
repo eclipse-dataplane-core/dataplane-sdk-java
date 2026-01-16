@@ -26,6 +26,8 @@ public abstract class Result<C> {
 
     public abstract C getContent();
 
+    public abstract Exception getException();
+
     public abstract C orElseThrow() throws Exception;
 
     public abstract <X extends Throwable> C orElseThrow(Function<Exception, X> exceptionSupplier) throws X;
@@ -53,6 +55,11 @@ public abstract class Result<C> {
         @Override
         public C getContent() {
             return content;
+        }
+
+        @Override
+        public Exception getException() {
+            throw new NoSuchElementException("Tried to getException from a successful Result");
         }
 
         @Override
@@ -90,6 +97,11 @@ public abstract class Result<C> {
         @Override
         public C getContent() {
             throw new NoSuchElementException("The result has no content because it's failed", exception);
+        }
+
+        @Override
+        public Exception getException() {
+            return exception;
         }
 
         @Override
