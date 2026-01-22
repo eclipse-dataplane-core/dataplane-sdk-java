@@ -60,6 +60,15 @@ public class Dataplane {
         return new DataPlaneSignalingApiController(this);
     }
 
+    public Result<DataFlow> getById(String dataFlowId) {
+        return store.findById(dataFlowId);
+    }
+
+    public Result<DataFlowStatusResponseMessage> status(String dataFlowId) {
+        return store.findById(dataFlowId)
+                .map(f -> new DataFlowStatusResponseMessage(f.getId(), f.getState().name()));
+    }
+
     public Result<DataFlowResponseMessage> prepare(DataFlowPrepareMessage message) {
         var initialDataFlow = DataFlow.newInstance()
                 .id(message.processId())
@@ -111,11 +120,6 @@ public class Dataplane {
                     }
                     return store.save(dataFlow).map(it -> response);
                 });
-    }
-
-    public Result<DataFlowStatusResponseMessage> status(String dataFlowId) {
-        return store.findById(dataFlowId)
-                .map(f -> new DataFlowStatusResponseMessage(f.getId(), f.getState().name()));
     }
 
     public Result<Void> suspend(String flowId, DataFlowSuspendMessage message) {
