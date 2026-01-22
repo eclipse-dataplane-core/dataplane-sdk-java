@@ -10,6 +10,7 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,11 +82,38 @@ public class StreamingPullTest {
 
         controlPlane.providerTerminate(providerProcessId, new DataFlowTerminateMessage("a good reason")).statusCode(200);
 
-        await().untilAsserted(() -> {
-            var filesTransferred = Objects.requireNonNull(consumerDataPlane.storage.toFile().listFiles()).length;
-            Thread.sleep(1000L);
-            assertThat(consumerDataPlane.storage.toFile().listFiles()).hasSize(filesTransferred);
-        });
+        consumerDataPlane.assertNoMoreDataIsTransferred();
+    }
+
+    @Test
+    void shouldSuspendAndResume() {
+        var transferType = "FileSystemStreaming-PULL";
+        var processId = UUID.randomUUID().toString();
+        var consumerProcessId = "consumer_" + processId;
+        var prepareMessage = prepareMessage(consumerProcessId, transferType);
+
+        var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
+        assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());
+        assertThat(prepareResponse.dataAddress()).isNull();
+
+        var providerProcessId = "provider_" + processId;
+        var startMessage = startMessage(providerProcessId, transferType);
+        var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
+        assertThat(startResponse.state()).isEqualTo(STARTED.name());
+        assertThat(startResponse.dataAddress()).isNotNull();
+
+        controlPlane.consumerStarted(consumerProcessId, new DataFlowStartedNotificationMessage(startResponse.dataAddress())).statusCode(200);
+
+        consumerDataPlane.assertDataIsFlowing();
+
+        controlPlane.providerSuspend(providerProcessId, new DataFlowSuspendMessage("a reason")).statusCode(200);
+
+        consumerDataPlane.assertNoMoreDataIsTransferred();
+
+        var resumeResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
+        controlPlane.consumerStarted(consumerProcessId, new DataFlowStartedNotificationMessage(resumeResponse.dataAddress())).statusCode(200);
+
+        consumerDataPlane.assertDataIsFlowing();
     }
 
     private DataFlowPrepareMessage prepareMessage(String consumerProcessId, String transferType) {
@@ -127,7 +155,8 @@ public class StreamingPullTest {
             try {
                 var folder = dataFlow.getDataAddress().endpoint();
                 executor.scheduleAtFixedRate(() -> {
-                    for (var listFile : Objects.requireNonNull(new File(folder).listFiles())) {
+                    var files = Objects.requireNonNull(new File(folder).listFiles());
+                    for (var listFile : files) {
                         try {
                             Files.move(listFile.toPath(), storage.resolve(listFile.getName()));
                         } catch (IOException e) {
@@ -141,6 +170,23 @@ public class StreamingPullTest {
                 return Result.failure(e);
             }
         }
+
+        public void assertNoMoreDataIsTransferred() {
+            await().untilAsserted(() -> {
+                var filesTransferred = Objects.requireNonNull(storage.toFile().listFiles()).length;
+                Thread.sleep(1000L);
+                assertThat(storage.toFile().listFiles()).hasSize(filesTransferred);
+            });
+        }
+
+        public void assertDataIsFlowing() {
+            for (var file : storage.toFile().listFiles()) {
+                file.delete();
+            }
+            await().untilAsserted(() -> {
+                assertThat(storage.toFile().listFiles()).hasSizeGreaterThan(20);
+            });
+        }
     }
 
     private static class ProviderDataPlane {
@@ -148,9 +194,10 @@ public class StreamingPullTest {
         private final Dataplane sdk = Dataplane.newInstance()
                 .id("provider")
                 .onStart(this::onStart)
-                .onTerminate(this::onTerminate)
+                .onSuspend(this::stopDataFlow)
+                .onTerminate(this::stopDataFlow)
                 .build();
-        private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(5);
         private final Map<String, ScheduledFuture<?>> flows = new HashMap<>();
 
         public ProviderDataPlane() {
@@ -183,7 +230,7 @@ public class StreamingPullTest {
             }
         }
 
-        private Result<DataFlow> onTerminate(DataFlow dataFlow) {
+        private Result<DataFlow> stopDataFlow(DataFlow dataFlow) {
             try {
                 flows.get(dataFlow.getId()).cancel(true);
                 return Result.success(dataFlow);
@@ -191,5 +238,6 @@ public class StreamingPullTest {
                 return Result.failure(e);
             }
         }
+
     }
 }

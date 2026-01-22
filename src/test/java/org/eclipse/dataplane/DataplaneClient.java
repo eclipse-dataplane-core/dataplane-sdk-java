@@ -5,6 +5,7 @@ import io.restassured.response.ValidatableResponse;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 
 import static io.restassured.RestAssured.given;
@@ -69,6 +70,16 @@ public class DataplaneClient {
         return given()
                 .baseUri(baseUri)
                 .post("/v1/dataflows/{id}/completed", dataFlowId)
+                .then()
+                .log().ifValidationFails();
+    }
+
+    public ValidatableResponse suspend(String flowId, DataFlowSuspendMessage suspendMessage) {
+        return given()
+                .contentType(ContentType.JSON)
+                .baseUri(baseUri)
+                .body(suspendMessage)
+                .post("/v1/dataflows/{id}/suspend", flowId)
                 .then()
                 .log().ifValidationFails();
     }

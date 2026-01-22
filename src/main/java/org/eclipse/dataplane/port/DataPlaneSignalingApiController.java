@@ -15,6 +15,7 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 import org.eclipse.dataplane.port.exception.DataFlowNotFoundException;
 
@@ -56,6 +57,13 @@ public class DataPlaneSignalingApiController {
             return Response.accepted(response).build();
         }
         return Response.ok(response).build();
+    }
+
+    @POST
+    @Path("/{flowId}/suspend")
+    public Response suspend(@PathParam("flowId") String flowId, DataFlowSuspendMessage message) {
+        dataplane.suspend(flowId, message).orElseThrow(this::mapToWsRsException);
+        return Response.ok().build();
     }
 
     @POST

@@ -13,6 +13,7 @@ public class DataFlow {
     private State state;
     private String transferType;
     private String callbackAddress;
+    private String suspensionReason;
     private String terminationReason;
     private List<String> labels;
     private Map<String, Object> metadata;
@@ -68,6 +69,11 @@ public class DataFlow {
 
     public void transitionToStarted() {
         state = State.STARTED;
+    }
+
+    public void transitionToSuspended(String reason) {
+        state = State.SUSPENDED;
+        this.suspensionReason = reason;
     }
 
     public void transitionToCompleted() {
@@ -162,6 +168,7 @@ public class DataFlow {
         PREPARED,
         STARTING,
         STARTED,
+        SUSPENDED,
         COMPLETED,
         TERMINATED
     }

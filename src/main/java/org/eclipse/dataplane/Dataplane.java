@@ -9,12 +9,14 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 import org.eclipse.dataplane.domain.registration.DataPlaneRegistrationMessage;
 import org.eclipse.dataplane.logic.OnCompleted;
 import org.eclipse.dataplane.logic.OnPrepare;
 import org.eclipse.dataplane.logic.OnStart;
 import org.eclipse.dataplane.logic.OnStarted;
+import org.eclipse.dataplane.logic.OnSuspend;
 import org.eclipse.dataplane.logic.OnTerminate;
 import org.eclipse.dataplane.port.DataPlaneSignalingApiController;
 import org.eclipse.dataplane.port.exception.DataFlowNotifyCompletedFailed;
@@ -42,9 +44,10 @@ public class Dataplane {
 
     private OnPrepare onPrepare = _m -> Result.failure(new UnsupportedOperationException("onPrepare is not implemented"));
     private OnStart onStart = _m -> Result.failure(new UnsupportedOperationException("onStart is not implemented"));
+    private OnTerminate onTerminate = _m -> Result.failure(new UnsupportedOperationException("onTerminate is not implemented"));
+    private OnSuspend onSuspend = _m -> Result.failure(new UnsupportedOperationException("onSuspend is not implemented"));
     private OnStarted onStarted = _m -> Result.failure(new UnsupportedOperationException("onStarted is not implemented"));;
     private OnCompleted onCompleted = _m -> Result.failure(new UnsupportedOperationException("onCompleted is not implemented"));
-    private OnTerminate onTerminate = _m -> Result.failure(new UnsupportedOperationException("onTerminate is not implemented"));
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -113,6 +116,17 @@ public class Dataplane {
     public Result<DataFlowStatusResponseMessage> status(String dataFlowId) {
         return store.findById(dataFlowId)
                 .map(f -> new DataFlowStatusResponseMessage(f.getId(), f.getState().name()));
+    }
+
+    public Result<Void> suspend(String flowId, DataFlowSuspendMessage message) {
+        return store.findById(flowId)
+                .map(dataFlow -> {
+                    dataFlow.transitionToSuspended(message.reason());
+                    return dataFlow;
+                })
+                .compose(onSuspend::action)
+                .compose(store::save)
+                .map(it -> null);
     }
 
     public Result<Void> terminate(String dataFlowId, DataFlowTerminateMessage message) {
@@ -281,6 +295,11 @@ public class Dataplane {
 
         public Builder onCompleted(OnCompleted onCompleted) {
             dataplane.onCompleted = onCompleted;
+            return this;
+        }
+
+        public Builder onSuspend(OnSuspend onSuspend) {
+            dataplane.onSuspend = onSuspend;
             return this;
         }
 

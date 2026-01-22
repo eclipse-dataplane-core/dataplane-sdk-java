@@ -8,6 +8,7 @@ import jakarta.ws.rs.PathParam;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 
 import java.net.http.HttpResponse;
@@ -47,6 +48,10 @@ public class ControlPlane {
 
     public ValidatableResponse providerStart(DataFlowStartMessage startMessage) {
         return providerClient.start(startMessage);
+    }
+
+    public ValidatableResponse providerSuspend(String flowId, DataFlowSuspendMessage suspendMessage) {
+        return providerClient.suspend(flowId, suspendMessage);
     }
 
     public ValidatableResponse providerStatus(String flowId) {
