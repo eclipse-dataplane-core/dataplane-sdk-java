@@ -86,7 +86,7 @@ public class StreamingPullTest {
     }
 
     @Test
-    void shouldSuspendAndResume() {
+    void shouldSuspendAndResumeOnProvider() {
         var transferType = "FileSystemStreaming-PULL";
         var processId = UUID.randomUUID().toString();
         var consumerProcessId = "consumer_" + processId;

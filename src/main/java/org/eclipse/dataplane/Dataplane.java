@@ -20,6 +20,7 @@ import org.eclipse.dataplane.logic.OnSuspend;
 import org.eclipse.dataplane.logic.OnTerminate;
 import org.eclipse.dataplane.port.DataPlaneSignalingApiController;
 import org.eclipse.dataplane.port.exception.DataFlowNotifyCompletedFailed;
+import org.eclipse.dataplane.port.exception.DataFlowNotifyErroredFailed;
 import org.eclipse.dataplane.port.exception.DataplaneNotRegistered;
 import org.eclipse.dataplane.port.store.DataFlowStore;
 import org.eclipse.dataplane.port.store.InMemoryDataFlowStore;
@@ -175,11 +176,30 @@ public class Dataplane {
     /**
      * Notify the control plane that the data flow failed for some reason
      *
-     * @param dataFlow
+     * @param dataFlowId
      * @param throwable
      */
-    public void notifyErrored(String dataFlow, Throwable throwable) {
-        // TODO: implementation
+    public Result<Void> notifyErrored(String dataFlowId, Throwable throwable) {
+        return store.findById(dataFlowId)
+                .compose(dataFlow -> {
+                    var endpoint = dataFlow.getCallbackAddress() + "/transfers/" + dataFlow.getId() + "/dataflow/errored";
+
+                    var request = HttpRequest.newBuilder()
+                            .uri(URI.create(endpoint))
+                            .header("content-type", "application/json")
+                            .POST(HttpRequest.BodyPublishers.ofString("{}")) // TODO DataFlowErroredMessage not defined
+                            .build();
+
+                    var response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+
+                    var successful = response.statusCode() >= 200 && response.statusCode() < 300;
+                    if (successful) {
+                        dataFlow.transitionToTerminated(throwable.getMessage());
+                        return store.save(dataFlow);
+                    }
+
+                    return Result.failure(new DataFlowNotifyErroredFailed(response));
+                });
     }
 
     public Result<Void> started(String flowId, DataFlowStartedNotificationMessage startedNotificationMessage) {

@@ -11,7 +11,6 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 
-import java.net.http.HttpResponse;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -91,6 +90,16 @@ public class ControlPlane {
             executor.submit(() -> {
                 var idPart = transferId.split("_")[1];
                 counterPart.completed("consumer_" + idPart).statusCode(200);
+            });
+        }
+
+        @POST
+        @Path("/{transferId}/dataflow/errored")
+        @Consumes(WILDCARD)
+        public void errored(@PathParam("transferId") String transferId) {
+            executor.submit(() -> {
+                var idPart = transferId.split("_")[1];
+                counterPart.terminate("consumer_" + idPart, new DataFlowTerminateMessage("terminated by provider")).statusCode(200);
             });
         }
 

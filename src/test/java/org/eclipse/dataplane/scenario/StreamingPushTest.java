@@ -16,9 +16,13 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.emptyList;
@@ -72,25 +76,22 @@ public class StreamingPushTest {
         assertThat(startResponse.state()).isEqualTo(STARTED.name());
         assertThat(startResponse.dataAddress()).isNull();
 
-        await().untilAsserted(() -> {
-            var folder = Path.of(destinationDataAddress.endpoint());
-            assertThat(folder.toFile()).exists().isDirectory().satisfies(destinationFolder -> {
-               assertThat(destinationFolder.listFiles()).hasSizeGreaterThan(15);
-            });
-        });
+        consumerDataPlane.assertDataIsFlowing(consumerProcessId);
     }
 
     private static class ProviderDataPlane {
 
-        private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(5);
+        private final Map<String, ScheduledFuture<?>> flows = new HashMap<>();
         private final Dataplane sdk = Dataplane.newInstance()
                 .id("provider")
                 .onStart(this::onStart)
+                .onSuspend(this::stopFlow)
                 .build();
 
         private Result<DataFlow> onStart(DataFlow dataFlow) {
             var dataAddress = dataFlow.getDataAddress();
-            executor.scheduleAtFixedRate(() -> {
+            var future = executor.scheduleAtFixedRate(() -> {
                 try {
                     var destination = Path.of(dataAddress.endpoint()).resolve(UUID.randomUUID().toString());
                     Files.writeString(destination, UUID.randomUUID().toString());
@@ -99,7 +100,18 @@ public class StreamingPushTest {
                 }
             }, 0, 100L, TimeUnit.MILLISECONDS);
 
+            flows.put(dataFlow.getId(), future);
+
             return Result.success(dataFlow);
+        }
+
+        private Result<DataFlow> stopFlow(DataFlow dataFlow) {
+            try {
+                flows.get(dataFlow.getId()).cancel(true);
+                return Result.success(dataFlow);
+            } catch (Exception e) {
+                return Result.failure(e);
+            }
         }
 
         public Object controller() {
@@ -112,8 +124,11 @@ public class StreamingPushTest {
         private final Dataplane sdk = Dataplane.newInstance()
                 .id("consumer")
                 .onPrepare(this::onPrepare)
+                .onSuspend(Result::success)
                 .onCompleted(this::onCompleted)
                 .build();
+
+        private final Map<String, DataAddress> destinations = new HashMap<>();
 
         private Result<DataFlow> onPrepare(DataFlow dataFlow) {
             try {
@@ -121,6 +136,7 @@ public class StreamingPushTest {
                 var dataAddress = new DataAddress("FileSystem", "folder", destinationFolder.toString(), emptyList());
 
                 dataFlow.setDataAddress(dataAddress);
+                destinations.put(dataFlow.getId(), dataAddress);
 
                 return Result.success(dataFlow);
             } catch (IOException e) {
@@ -145,5 +161,23 @@ public class StreamingPushTest {
         public Object controller() {
             return sdk.controller();
         }
+
+        public void assertDataIsFlowing(String consumerProcessId) {
+            var destinationDataAddress = sdk.getById(consumerProcessId).map(DataFlow::getDataAddress)
+                    .orElseThrow(f -> new AssertionError("No DataFlow with id %s found".formatted(consumerProcessId)));
+
+            var folder = Path.of(destinationDataAddress.endpoint()).toFile();
+            for (var file : Objects.requireNonNull(folder.listFiles())) {
+                file.delete();
+            }
+
+            await().untilAsserted(() -> {
+                assertThat(folder).exists().isDirectory().satisfies(destinationFolder -> {
+                    assertThat(destinationFolder.listFiles()).hasSizeGreaterThan(15);
+                });
+            });
+
+        }
+
     }
 }
