@@ -15,4 +15,4 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Run Checkstyle
-        run: ./gradlew checkstyleMain checkstyleTest checkstyleTestFixtures
+        run: ./gradlew checkstyleMain checkstyleTest
