@@ -3,6 +3,7 @@ plugins {
     `java-library`
     `maven-publish`
     signing
+    checkstyle
     id("com.vanniktech.maven.publish") version "0.36.0"
 }
 
