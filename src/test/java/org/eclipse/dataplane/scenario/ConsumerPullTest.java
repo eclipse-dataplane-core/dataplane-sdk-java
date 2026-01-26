@@ -1,3 +1,17 @@
+/*
+ *  Copyright (c) 2025 Think-it GmbH
+ *
+ *  This program and the accompanying materials are made available under the
+ *  terms of the Apache License, Version 2.0 which is available at
+ *  https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  SPDX-License-Identifier: Apache-2.0
+ *
+ *  Contributors:
+ *       Think-it GmbH - initial API and implementation
+ *
+ */
+
 package org.eclipse.dataplane.scenario;
 
 import org.eclipse.dataplane.ControlPlane;
@@ -28,7 +42,7 @@ import static org.awaitility.Awaitility.await;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.PREPARED;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.STARTED;
 
-public class ConsumerPullTest {
+class ConsumerPullTest {
 
     private final HttpServer httpServer = new HttpServer(21341);
     private final int filesAvailableOnProvider = 13;
@@ -82,7 +96,7 @@ public class ConsumerPullTest {
 
         private final Path storage;
 
-        public ConsumerDataPlane() {
+        ConsumerDataPlane() {
             try {
                 storage = Files.createTempDirectory("consumer-storage");
             } catch (IOException e) {
@@ -122,7 +136,7 @@ public class ConsumerPullTest {
                 .build();
         private final int filesToBeCreated;
 
-        public ProviderDataPlane(int fileToBeCreated) {
+        ProviderDataPlane(int fileToBeCreated) {
             this.filesToBeCreated = fileToBeCreated;
         }
 

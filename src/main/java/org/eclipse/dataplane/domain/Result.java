@@ -1,3 +1,17 @@
+/*
+ *  Copyright (c) 2025 Think-it GmbH
+ *
+ *  This program and the accompanying materials are made available under the
+ *  terms of the Apache License, Version 2.0 which is available at
+ *  https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  SPDX-License-Identifier: Apache-2.0
+ *
+ *  Contributors:
+ *       Think-it GmbH - initial API and implementation
+ *
+ */
+
 package org.eclipse.dataplane.domain;
 
 import java.util.NoSuchElementException;
@@ -13,13 +27,15 @@ public abstract class Result<C> {
         return new Success<>(content);
     }
 
-    public static <R> Result<R> failure(Exception e){ return new Failure<>(e); }
+    public static <R> Result<R> failure(Exception e) {
+        return new Failure<>(e);
+    }
 
     public static <R> Result<R> attempt(ExceptionThrowingSupplier<R> resultSupplier) {
         try {
             var resultValue = resultSupplier.get();
             return Result.success(resultValue);
-        } catch (Exception exception){
+        } catch (Exception exception) {
             return Result.failure(exception);
         }
     }
@@ -32,7 +48,7 @@ public abstract class Result<C> {
 
     public abstract <X extends Throwable> C orElseThrow(Function<Exception, X> exceptionSupplier) throws X;
 
-    public abstract <T> Result<T> map(ExceptionThrowingFunction<C,T> transformValue);
+    public abstract <T> Result<T> map(ExceptionThrowingFunction<C, T> transformValue);
 
     public abstract <T> Result<T> compose(ExceptionThrowingFunction<C, Result<T>> transformValue);
 
@@ -48,7 +64,7 @@ public abstract class Result<C> {
 
         private final C content;
 
-        public Success(C content) {
+        Success(C content) {
             this.content = content;
         }
 
@@ -81,7 +97,7 @@ public abstract class Result<C> {
         public <T> Result<T> compose(ExceptionThrowingFunction<C, Result<T>> transformValue) {
             try {
                 return transformValue.apply(this.content);
-            } catch(Exception e) {
+            } catch (Exception e) {
                 return Result.failure(e);
             }
         }
@@ -90,6 +106,7 @@ public abstract class Result<C> {
     private static class Failure<C> extends Result<C> {
 
         private final Exception exception;
+
         private Failure(Exception exception) {
             this.exception = exception;
         }
@@ -126,7 +143,7 @@ public abstract class Result<C> {
     }
 
     @FunctionalInterface
-    public interface ExceptionThrowingFunction<T,R> {
+    public interface ExceptionThrowingFunction<T, R> {
         R apply(T t) throws Exception;
     }
 

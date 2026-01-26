@@ -1,3 +1,17 @@
+/*
+ *  Copyright (c) 2025 Think-it GmbH
+ *
+ *  This program and the accompanying materials are made available under the
+ *  terms of the Apache License, Version 2.0 which is available at
+ *  https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  SPDX-License-Identifier: Apache-2.0
+ *
+ *  Contributors:
+ *       Think-it GmbH - initial API and implementation
+ *
+ */
+
 package org.eclipse.dataplane.scenario;
 
 import org.eclipse.dataplane.ControlPlane;
@@ -36,7 +50,7 @@ import static org.awaitility.Awaitility.await;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.PREPARED;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.STARTED;
 
-public class StreamingPullTest {
+class StreamingPullTest {
 
     private final HttpServer httpServer = new HttpServer(21341);
 
@@ -133,7 +147,7 @@ public class StreamingPullTest {
         private final Path storage;
         private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
-        public ConsumerDataPlane() {
+        ConsumerDataPlane() {
             try {
                 storage = Files.createTempDirectory("consumer-storage");
             } catch (IOException e) {
@@ -200,7 +214,7 @@ public class StreamingPullTest {
         private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(5);
         private final Map<String, ScheduledFuture<?>> flows = new HashMap<>();
 
-        public ProviderDataPlane() {
+        ProviderDataPlane() {
         }
 
         public Object controller() {

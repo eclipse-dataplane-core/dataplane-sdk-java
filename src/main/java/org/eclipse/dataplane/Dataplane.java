@@ -58,12 +58,12 @@ public class Dataplane {
     private final Set<String> transferTypes = new HashSet<>();
     private final Set<String> labels = new HashSet<>();
 
-    private OnPrepare onPrepare = _m -> Result.failure(new UnsupportedOperationException("onPrepare is not implemented"));
-    private OnStart onStart = _m -> Result.failure(new UnsupportedOperationException("onStart is not implemented"));
-    private OnTerminate onTerminate = _m -> Result.failure(new UnsupportedOperationException("onTerminate is not implemented"));
-    private OnSuspend onSuspend = _m -> Result.failure(new UnsupportedOperationException("onSuspend is not implemented"));
-    private OnStarted onStarted = _m -> Result.failure(new UnsupportedOperationException("onStarted is not implemented"));;
-    private OnCompleted onCompleted = _m -> Result.failure(new UnsupportedOperationException("onCompleted is not implemented"));
+    private OnPrepare onPrepare = dataFlow -> Result.failure(new UnsupportedOperationException("onPrepare is not implemented"));
+    private OnStart onStart = dataFlow -> Result.failure(new UnsupportedOperationException("onStart is not implemented"));
+    private OnTerminate onTerminate = dataFlow -> Result.failure(new UnsupportedOperationException("onTerminate is not implemented"));
+    private OnSuspend onSuspend = dataFlow -> Result.failure(new UnsupportedOperationException("onSuspend is not implemented"));
+    private OnStarted onStarted = dataFlow -> Result.failure(new UnsupportedOperationException("onStarted is not implemented"));
+    private OnCompleted onCompleted = dataFlow -> Result.failure(new UnsupportedOperationException("onCompleted is not implemented"));
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -173,7 +173,7 @@ public class Dataplane {
     /**
      * Notify the control plane that the data flow has been completed.
      *
-     * @param dataFlowId
+     * @param dataFlowId id of the data flow
      */
     public Result<Void> notifyCompleted(String dataFlowId) {
         return store.findById(dataFlowId)
@@ -201,8 +201,8 @@ public class Dataplane {
     /**
      * Notify the control plane that the data flow failed for some reason
      *
-     * @param dataFlowId
-     * @param throwable
+     * @param dataFlowId id of the data flow
+     * @param throwable the error
      */
     public Result<Void> notifyErrored(String dataFlowId, Throwable throwable) {
         return store.findById(dataFlowId)
@@ -243,8 +243,8 @@ public class Dataplane {
     /**
      * Received notification that the flow has been completed
      *
-     * @param flowId
-     * @return
+     * @param flowId  id of the data flow
+     * @return result indicating whether data flow was completed successfully
      */
     public Result<Void> completed(String flowId) {
         return store.findById(flowId).compose(onCompleted::action)
