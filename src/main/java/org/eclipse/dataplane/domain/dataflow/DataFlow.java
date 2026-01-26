@@ -1,3 +1,18 @@
+/*
+ *  Copyright (c) 2025 Think-it GmbH
+ *
+ *  This program and the accompanying materials are made available under the
+ *  terms of the Apache License, Version 2.0 which is available at
+ *  https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  SPDX-License-Identifier: Apache-2.0
+ *
+ *  Contributors:
+ *       Think-it GmbH - initial API and implementation
+ *       Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V. - data flow properties
+ *
+ */
+
 package org.eclipse.dataplane.domain.dataflow;
 
 import org.eclipse.dataplane.domain.DataAddress;
@@ -12,6 +27,11 @@ public class DataFlow {
     private String id;
     private State state;
     private String transferType;
+    private String datasetId;
+    private String agreementId;
+    private String participantId;
+    private String counterPartyId;
+    private String dataspaceContext;
     private String callbackAddress;
     private String suspensionReason;
     private String terminationReason;
@@ -41,6 +61,30 @@ public class DataFlow {
 
     public String getTransferType() {
         return transferType;
+    }
+
+    public String getDatasetId() {
+        return datasetId;
+    }
+
+    public String getAgreementId() {
+        return agreementId;
+    }
+
+    public String getParticipantId() {
+        return participantId;
+    }
+
+    public String getCounterPartyId() {
+        return counterPartyId;
+    }
+
+    public String getDataspaceContext() {
+        return dataspaceContext;
+    }
+
+    public String getSuspensionReason() {
+        return suspensionReason;
     }
 
     public String getTerminationReason() {
@@ -138,6 +182,31 @@ public class DataFlow {
 
         public Builder transferType(String transferType) {
             dataFlow.transferType = transferType;
+            return this;
+        }
+
+        public Builder datasetId(String datasetId) {
+            dataFlow.datasetId = datasetId;
+            return this;
+        }
+
+        public Builder agreementId(String agreementId) {
+            dataFlow.agreementId = agreementId;
+            return this;
+        }
+
+        public Builder participantId(String participantId) {
+            dataFlow.participantId = participantId;
+            return this;
+        }
+
+        public Builder counterPartyId(String counterPartyId) {
+            dataFlow.counterPartyId = counterPartyId;
+            return this;
+        }
+
+        public Builder dataspaceContext(String dataspaceContext) {
+            dataFlow.dataspaceContext = dataspaceContext;
             return this;
         }
 
