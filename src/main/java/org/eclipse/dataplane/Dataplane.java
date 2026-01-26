@@ -34,8 +34,7 @@ import org.eclipse.dataplane.logic.OnStarted;
 import org.eclipse.dataplane.logic.OnSuspend;
 import org.eclipse.dataplane.logic.OnTerminate;
 import org.eclipse.dataplane.port.DataPlaneSignalingApiController;
-import org.eclipse.dataplane.port.exception.DataFlowNotifyCompletedFailed;
-import org.eclipse.dataplane.port.exception.DataFlowNotifyErroredFailed;
+import org.eclipse.dataplane.port.exception.DataFlowNotifyControlPlaneFailed;
 import org.eclipse.dataplane.port.exception.DataplaneNotRegistered;
 import org.eclipse.dataplane.port.store.DataFlowStore;
 import org.eclipse.dataplane.port.store.InMemoryDataFlowStore;
@@ -47,6 +46,8 @@ import java.net.http.HttpResponse;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+
+import static java.util.Collections.emptyMap;
 
 public class Dataplane {
 
@@ -175,31 +176,48 @@ public class Dataplane {
     }
 
     /**
+     * Notify the control plane that the data flow has been prepared.
+     *
+     * @param dataFlowId the data flow id.
+     */
+    public Result<Void> notifyPrepared(String dataFlowId, OnPrepare onPrepare) {
+        return store.findById(dataFlowId)
+                .compose(onPrepare::action)
+                .compose(dataFlow -> {
+                    var message = new DataFlowResponseMessage(id, dataFlow.getDataAddress(), dataFlow.getState().name(), null);
+
+                    return notifyControlPlane("prepared", dataFlow, message)
+                            .compose(response -> {
+                                var successful = response.statusCode() >= 200 && response.statusCode() < 300;
+                                if (successful) {
+                                    dataFlow.transitionToPrepared();
+                                    return save(dataFlow);
+                                }
+
+                                return Result.failure(new DataFlowNotifyControlPlaneFailed("prepared", response));
+                            });
+
+                });
+    }
+
+
+    /**
      * Notify the control plane that the data flow has been completed.
      *
      * @param dataFlowId id of the data flow
      */
     public Result<Void> notifyCompleted(String dataFlowId) {
         return store.findById(dataFlowId)
-                .compose(dataFlow -> {
-                    var endpoint = dataFlow.getCallbackAddress() + "/transfers/" + dataFlow.getId() + "/dataflow/completed";
+                .compose(dataFlow -> notifyControlPlane("completed", dataFlow, emptyMap()) // TODO DataFlowCompletedMessage not defined
+                        .compose(response -> {
+                            var successful = response.statusCode() >= 200 && response.statusCode() < 300;
+                            if (successful) {
+                                dataFlow.transitionToCompleted();
+                                return save(dataFlow);
+                            }
 
-                    var request = HttpRequest.newBuilder()
-                            .uri(URI.create(endpoint))
-                            .header("content-type", "application/json")
-                            .POST(HttpRequest.BodyPublishers.ofString("{}")) // TODO DataFlowCompletedMessage not defined
-                            .build();
-
-                    var response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
-
-                    var successful = response.statusCode() >= 200 && response.statusCode() < 300;
-                    if (successful) {
-                        dataFlow.transitionToCompleted();
-                        return save(dataFlow);
-                    }
-
-                    return Result.failure(new DataFlowNotifyCompletedFailed(response));
-                });
+                            return Result.failure(new DataFlowNotifyControlPlaneFailed("completed", response));
+                        }));
     }
 
     /**
@@ -210,25 +228,16 @@ public class Dataplane {
      */
     public Result<Void> notifyErrored(String dataFlowId, Throwable throwable) {
         return store.findById(dataFlowId)
-                .compose(dataFlow -> {
-                    var endpoint = dataFlow.getCallbackAddress() + "/transfers/" + dataFlow.getId() + "/dataflow/errored";
+                .compose(dataFlow -> notifyControlPlane("errored", dataFlow, emptyMap()) // TODO DataFlowErroredMessage not defined
+                        .compose(response -> {
+                            var successful = response.statusCode() >= 200 && response.statusCode() < 300;
+                            if (successful) {
+                                dataFlow.transitionToTerminated(throwable.getMessage());
+                                return save(dataFlow);
+                            }
 
-                    var request = HttpRequest.newBuilder()
-                            .uri(URI.create(endpoint))
-                            .header("content-type", "application/json")
-                            .POST(HttpRequest.BodyPublishers.ofString("{}")) // TODO DataFlowErroredMessage not defined
-                            .build();
-
-                    var response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
-
-                    var successful = response.statusCode() >= 200 && response.statusCode() < 300;
-                    if (successful) {
-                        dataFlow.transitionToTerminated(throwable.getMessage());
-                        return save(dataFlow);
-                    }
-
-                    return Result.failure(new DataFlowNotifyErroredFailed(response));
-                });
+                            return Result.failure(new DataFlowNotifyControlPlaneFailed("errored", response));
+                        }));
     }
 
     public Result<Void> started(String flowId, DataFlowStartedNotificationMessage startedNotificationMessage) {
@@ -279,7 +288,20 @@ public class Dataplane {
                 });
     }
 
-    private Result<String> toJson(DataPlaneRegistrationMessage message) {
+    private Result<HttpResponse<Void>> notifyControlPlane(String action, DataFlow dataFlow, Object message) {
+        return toJson(message).map(body -> {
+            var endpoint = dataFlow.callbackEndpointFor(action);
+            var request = HttpRequest.newBuilder()
+                    .uri(URI.create(endpoint))
+                    .header("content-type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+
+            return httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+        });
+    }
+
+    private Result<String> toJson(Object message) {
         try {
             return Result.success(objectMapper.writeValueAsString(message));
         } catch (JsonProcessingException e) {

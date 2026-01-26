@@ -16,15 +16,21 @@ package org.eclipse.dataplane.port.exception;
 
 import java.net.http.HttpResponse;
 
-public class DataFlowNotifyErroredFailed extends Exception {
+public class DataFlowNotifyControlPlaneFailed extends Exception {
+    private final String action;
     private final HttpResponse<Void> response;
 
-    public DataFlowNotifyErroredFailed(HttpResponse<Void> response) {
+    public DataFlowNotifyControlPlaneFailed(String action, HttpResponse<Void> response) {
         super("control-plane responded with %s".formatted(response.statusCode()));
+        this.action = action;
         this.response = response;
     }
 
     public HttpResponse<Void> getResponse() {
         return response;
+    }
+
+    public String getAction() {
+        return action;
     }
 }
