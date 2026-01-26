@@ -71,8 +71,3 @@ mavenPublishing {
         }
     }
 }
-
-checkstyle {
-    configFile = rootProject.file("resources/dataplane-sdk-checkstyle.xml")
-    configDirectory.set(rootProject.file("resources"))
-}
