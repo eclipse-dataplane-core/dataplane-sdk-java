@@ -80,6 +80,10 @@ public class Dataplane {
         return store.findById(dataFlowId);
     }
 
+    public Result<Void> save(DataFlow dataFlow) {
+        return store.save(dataFlow);
+    }
+
     public Result<DataFlowStatusResponseMessage> status(String dataFlowId) {
         return store.findById(dataFlowId)
                 .map(f -> new DataFlowStatusResponseMessage(f.getId(), f.getState().name()));
@@ -113,7 +117,7 @@ public class Dataplane {
                         response = new DataFlowResponseMessage(id, null, initialDataFlow.getState().name(), null);
                     }
 
-                    return store.save(dataFlow).map(it -> response);
+                    return save(dataFlow).map(it -> response);
                 });
     }
 
@@ -144,7 +148,7 @@ public class Dataplane {
                     } else {
                         response = new DataFlowResponseMessage(id, null, dataFlow.getState().name(), null);
                     }
-                    return store.save(dataFlow).map(it -> response);
+                    return save(dataFlow).map(it -> response);
                 });
     }
 
@@ -191,7 +195,7 @@ public class Dataplane {
                     var successful = response.statusCode() >= 200 && response.statusCode() < 300;
                     if (successful) {
                         dataFlow.transitionToCompleted();
-                        return store.save(dataFlow);
+                        return save(dataFlow);
                     }
 
                     return Result.failure(new DataFlowNotifyCompletedFailed(response));
@@ -220,7 +224,7 @@ public class Dataplane {
                     var successful = response.statusCode() >= 200 && response.statusCode() < 300;
                     if (successful) {
                         dataFlow.transitionToTerminated(throwable.getMessage());
-                        return store.save(dataFlow);
+                        return save(dataFlow);
                     }
 
                     return Result.failure(new DataFlowNotifyErroredFailed(response));
@@ -236,7 +240,7 @@ public class Dataplane {
                 .compose(onStarted::action)
                 .compose(dataFlow -> {
                     dataFlow.transitionToStarted();
-                    return store.save(dataFlow);
+                    return save(dataFlow);
                 });
     }
 
@@ -250,7 +254,7 @@ public class Dataplane {
         return store.findById(flowId).compose(onCompleted::action)
                 .compose(dataFlow -> {
                     dataFlow.transitionToCompleted();
-                    return store.save(dataFlow);
+                    return save(dataFlow);
                 });
     }
 
