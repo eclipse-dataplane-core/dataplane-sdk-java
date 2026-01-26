@@ -153,6 +153,10 @@ public class DataFlow {
         this.dataAddress = dataAddress;
     }
 
+    public String callbackEndpointFor(String action) {
+        return getCallbackAddress() + "/transfers/" + getId() + "/dataflow/" + action;
+    }
+
     public static class Builder {
         private final DataFlow dataFlow = new DataFlow();
 

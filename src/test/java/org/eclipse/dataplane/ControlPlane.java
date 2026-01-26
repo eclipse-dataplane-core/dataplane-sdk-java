@@ -20,6 +20,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
@@ -95,6 +96,13 @@ public class ControlPlane {
 
         public ControlPlaneController(DataplaneClient counterPart) {
             this.counterPart = counterPart;
+        }
+
+        @POST
+        @Path("/{transferId}/dataflow/prepared")
+        @Consumes(WILDCARD)
+        public void prepared(@PathParam("transferId") String transferId, DataFlowResponseMessage message) {
+
         }
 
         @POST

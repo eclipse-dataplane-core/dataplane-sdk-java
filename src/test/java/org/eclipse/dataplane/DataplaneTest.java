@@ -18,7 +18,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.port.exception.DataFlowNotFoundException;
-import org.eclipse.dataplane.port.exception.DataFlowNotifyCompletedFailed;
+import org.eclipse.dataplane.port.exception.DataFlowNotifyControlPlaneFailed;
 import org.eclipse.dataplane.port.exception.DataplaneNotRegistered;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,7 +92,7 @@ class DataplaneTest {
             var result = dataplane.notifyCompleted("dataFlowId");
 
             assertThat(result.failed()).isTrue();
-            assertThatThrownBy(result::orElseThrow).isExactlyInstanceOf(DataFlowNotifyCompletedFailed.class);
+            assertThatThrownBy(result::orElseThrow).isExactlyInstanceOf(DataFlowNotifyControlPlaneFailed.class);
             assertThat(dataplane.status("dataFlowId").getContent().state()).isNotEqualTo(COMPLETED.name());
         }
 

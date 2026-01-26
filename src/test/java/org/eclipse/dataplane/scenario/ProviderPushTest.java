@@ -43,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.COMPLETED;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.PREPARED;
+import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.PREPARING;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.STARTED;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.TERMINATED;
 
@@ -72,7 +73,7 @@ public class ProviderPushTest {
         var transferType = "FileSystem-PUSH";
         var processId = UUID.randomUUID().toString();
         var consumerProcessId = "consumer_" + processId;
-        var prepareMessage = createPrepareMessage(consumerProcessId, transferType);
+        var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
 
         var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
         assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());
@@ -103,7 +104,7 @@ public class ProviderPushTest {
         var transferType = "FileSystem-PUSH";
         var processId = UUID.randomUUID().toString();
         var consumerProcessId = "consumer_" + processId;
-        var prepareMessage = createPrepareMessage(consumerProcessId, transferType);
+        var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
 
         controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
         var invalidDataAddress = new DataAddress("FileSystem", "", emptyList());
@@ -121,15 +122,32 @@ public class ProviderPushTest {
         });
     }
 
+    @Test
+    void shouldPermitAsyncPreparation() {
+        var transferType = "FileSystemAsync-PUSH";
+        var processId = UUID.randomUUID().toString();
+        var consumerProcessId = "consumer_" + processId;
+        var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
+
+        var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(202).extract().as(DataFlowResponseMessage.class);
+        assertThat(prepareResponse.state()).isEqualTo(PREPARING.name());
+        assertThat(prepareResponse.dataAddress()).isNull();
+
+        consumerDataPlane.completePreparation(consumerProcessId);
+
+        assertThat(controlPlane.consumerStatus(consumerProcessId).statusCode(200).extract().as(DataFlowStatusResponseMessage.class).state())
+                .isEqualTo(PREPARED.name());
+    }
+
     private @NonNull DataFlowStartMessage createStartMessage(String providerProcessId, String callbackAddress, String transferType, DataAddress destinationDataAddress) {
         return new DataFlowStartMessage("theMessageId", "theParticipantId", "theCounterPartyId",
                 "theDataspaceContext", providerProcessId, "theAgreementId", "theDatasetId", callbackAddress,
                 transferType, destinationDataAddress, emptyList(), emptyMap());
     }
 
-    private @NonNull DataFlowPrepareMessage createPrepareMessage(String consumerProcessId, String transferType) {
+    private @NonNull DataFlowPrepareMessage createPrepareMessage(String consumerProcessId, String callbackAddress, String transferType) {
         return new DataFlowPrepareMessage("theMessageId", "theParticipantId", "theCounterPartyId",
-                "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", "theCallbackAddress",
+                "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", callbackAddress,
                 transferType, emptyList(), emptyMap());
     }
 
@@ -178,13 +196,24 @@ public class ProviderPushTest {
                 .onTerminate(Result::success)
                 .build();
 
+        public void completePreparation(String dataFlowId) {
+            sdk.getById(dataFlowId)
+                    .compose(dataFlow -> sdk.notifyPrepared(dataFlowId, this::prepareDestinationDataAddress))
+                    .orElseThrow(f -> new RuntimeException(f.getCause()));
+        }
+
         private Result<DataFlow> onPrepare(DataFlow dataFlow) {
+            if (dataFlow.getTransferType().equals("FileSystemAsync-PUSH")) {
+                dataFlow.transitionToPreparing();
+                return Result.success(dataFlow);
+            }
+
+            return prepareDestinationDataAddress(dataFlow);
+        }
+
+        private @NonNull Result<DataFlow> prepareDestinationDataAddress(DataFlow dataFlow) {
             try {
-                var destinationFile = Files.createTempDirectory("consumer-dest").resolve(dataFlow.getId() + "-content");
-                var dataAddress = new DataAddress("FileSystem", "file", destinationFile.toString(), emptyList());
-
-                dataFlow.setDataAddress(dataAddress);
-
+                dataFlow.setDataAddress(destinationDataAddress(dataFlow));
                 return Result.success(dataFlow);
             } catch (IOException e) {
                 return Result.failure(e);
@@ -203,6 +232,11 @@ public class ProviderPushTest {
             } catch (IOException e) {
                 return Result.failure(e);
             }
+        }
+
+        private @NonNull DataAddress destinationDataAddress(DataFlow dataFlow) throws IOException {
+            var destinationFile = Files.createTempDirectory("consumer-dest").resolve(dataFlow.getId() + "-content");
+            return new DataAddress("file", destinationFile.toString(), emptyList());
         }
 
         public Object controller() {
