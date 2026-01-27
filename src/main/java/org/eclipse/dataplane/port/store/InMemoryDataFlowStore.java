@@ -14,6 +14,8 @@
 
 package org.eclipse.dataplane.port.store;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
 import org.eclipse.dataplane.port.exception.DataFlowNotFoundException;
@@ -23,12 +25,21 @@ import java.util.Map;
 
 public class InMemoryDataFlowStore implements DataFlowStore {
 
-    private final Map<String, DataFlow> store = new HashMap<>();
+    private final Map<String, String> store = new HashMap<>();
+    private final ObjectMapper objectMapper;
+
+    public InMemoryDataFlowStore(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
 
     @Override
     public Result<Void> save(DataFlow dataFlow) {
-        store.put(dataFlow.getId(), dataFlow);
-        return Result.success();
+        try {
+            store.put(dataFlow.getId(), objectMapper.writeValueAsString(dataFlow));
+            return Result.success();
+        } catch (JsonProcessingException e) {
+            return Result.failure(e);
+        }
     }
 
     @Override
@@ -37,6 +48,12 @@ public class InMemoryDataFlowStore implements DataFlowStore {
         if (dataFlow == null) {
             return Result.failure(new DataFlowNotFoundException("DataFlow %s not found".formatted(flowId)));
         }
-        return Result.success(dataFlow);
+
+        try {
+            var deserialized = objectMapper.readValue(dataFlow, DataFlow.class);
+            return Result.success(deserialized);
+        } catch (JsonProcessingException e) {
+            return Result.failure(e);
+        }
     }
 }
