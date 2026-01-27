@@ -47,11 +47,13 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static java.util.Collections.emptyMap;
 
 public class Dataplane {
 
-    private final DataFlowStore store = new InMemoryDataFlowStore();
+    private final ObjectMapper objectMapper = new ObjectMapper().configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private final DataFlowStore store = new InMemoryDataFlowStore(objectMapper);
     private String id;
     private String name;
     private String description;
@@ -67,7 +69,6 @@ public class Dataplane {
     private OnCompleted onCompleted = dataFlow -> Result.failure(new UnsupportedOperationException("onCompleted is not implemented"));
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public static Builder newInstance() {
         return new Builder();
@@ -184,22 +185,31 @@ public class Dataplane {
         return store.findById(dataFlowId)
                 .compose(onPrepare::action)
                 .compose(dataFlow -> {
+                    dataFlow.transitionToPrepared();
                     var message = new DataFlowResponseMessage(id, dataFlow.getDataAddress(), dataFlow.getState().name(), null);
 
-                    return notifyControlPlane("prepared", dataFlow, message)
-                            .compose(response -> {
-                                var successful = response.statusCode() >= 200 && response.statusCode() < 300;
-                                if (successful) {
-                                    dataFlow.transitionToPrepared();
-                                    return save(dataFlow);
-                                }
-
-                                return Result.failure(new DataFlowNotifyControlPlaneFailed("prepared", response));
-                            });
+                    return notifyControlPlane("prepared", dataFlow, message);
 
                 });
     }
 
+    /**
+     * Notify the control plane that the data flow has been started.
+     *
+     * @param dataFlowId the data flow id.
+     */
+    public Result<Void> notifyStarted(String dataFlowId, OnStart onStart) {
+        return store.findById(dataFlowId)
+                .compose(onStart::action)
+                .compose(dataFlow -> {
+                    dataFlow.transitionToStarted();
+
+                    var message = new DataFlowResponseMessage(id, dataFlow.getDataAddress(), dataFlow.getState().name(), null);
+
+                    return notifyControlPlane("started", dataFlow, message);
+
+                });
+    }
 
     /**
      * Notify the control plane that the data flow has been completed.
@@ -208,36 +218,26 @@ public class Dataplane {
      */
     public Result<Void> notifyCompleted(String dataFlowId) {
         return store.findById(dataFlowId)
-                .compose(dataFlow -> notifyControlPlane("completed", dataFlow, emptyMap()) // TODO DataFlowCompletedMessage not defined
-                        .compose(response -> {
-                            var successful = response.statusCode() >= 200 && response.statusCode() < 300;
-                            if (successful) {
-                                dataFlow.transitionToCompleted();
-                                return save(dataFlow);
-                            }
+                .compose(dataFlow -> {
+                    dataFlow.transitionToCompleted();
 
-                            return Result.failure(new DataFlowNotifyControlPlaneFailed("completed", response));
-                        }));
+                    return notifyControlPlane("completed", dataFlow, emptyMap()); // TODO DataFlowCompletedMessage not defined
+                });
     }
 
     /**
      * Notify the control plane that the data flow failed for some reason
      *
      * @param dataFlowId id of the data flow
-     * @param throwable the error
+     * @param throwable  the error
      */
     public Result<Void> notifyErrored(String dataFlowId, Throwable throwable) {
         return store.findById(dataFlowId)
-                .compose(dataFlow -> notifyControlPlane("errored", dataFlow, emptyMap()) // TODO DataFlowErroredMessage not defined
-                        .compose(response -> {
-                            var successful = response.statusCode() >= 200 && response.statusCode() < 300;
-                            if (successful) {
-                                dataFlow.transitionToTerminated(throwable.getMessage());
-                                return save(dataFlow);
-                            }
+                .compose(dataFlow -> {
+                    dataFlow.transitionToTerminated(throwable.getMessage());
 
-                            return Result.failure(new DataFlowNotifyControlPlaneFailed("errored", response));
-                        }));
+                    return notifyControlPlane("errored", dataFlow, emptyMap()); // TODO DataFlowErroredMessage not defined
+                });
     }
 
     public Result<Void> started(String flowId, DataFlowStartedNotificationMessage startedNotificationMessage) {
@@ -256,7 +256,7 @@ public class Dataplane {
     /**
      * Received notification that the flow has been completed
      *
-     * @param flowId  id of the data flow
+     * @param flowId id of the data flow
      * @return result indicating whether data flow was completed successfully
      */
     public Result<Void> completed(String flowId) {
@@ -288,17 +288,26 @@ public class Dataplane {
                 });
     }
 
-    private Result<HttpResponse<Void>> notifyControlPlane(String action, DataFlow dataFlow, Object message) {
-        return toJson(message).map(body -> {
-            var endpoint = dataFlow.callbackEndpointFor(action);
-            var request = HttpRequest.newBuilder()
-                    .uri(URI.create(endpoint))
-                    .header("content-type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body))
-                    .build();
+    private Result<Void> notifyControlPlane(String action, DataFlow dataFlow, Object message) {
+        return toJson(message)
+                .map(body -> {
+                    var endpoint = dataFlow.callbackEndpointFor(action);
+                    var request = HttpRequest.newBuilder()
+                            .uri(URI.create(endpoint))
+                            .header("content-type", "application/json")
+                            .POST(HttpRequest.BodyPublishers.ofString(body))
+                            .build();
 
-            return httpClient.send(request, HttpResponse.BodyHandlers.discarding());
-        });
+                    return httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+                })
+                .compose(response -> {
+                    var successful = response.statusCode() >= 200 && response.statusCode() < 300;
+                    if (successful) {
+                        return save(dataFlow);
+                    }
+
+                    return Result.failure(new DataFlowNotifyControlPlaneFailed(action, response));
+                });
     }
 
     private Result<String> toJson(Object message) {

@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static jakarta.ws.rs.core.MediaType.WILDCARD;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * This simulates control plane for both consumer and provider.
@@ -102,7 +103,14 @@ public class ControlPlane {
         @Path("/{transferId}/dataflow/prepared")
         @Consumes(WILDCARD)
         public void prepared(@PathParam("transferId") String transferId, DataFlowResponseMessage message) {
+            assertThat(message.state()).isEqualTo("PREPARED");
+        }
 
+        @POST
+        @Path("/{transferId}/dataflow/started")
+        @Consumes(WILDCARD)
+        public void started(@PathParam("transferId") String transferId, DataFlowResponseMessage message) {
+            assertThat(message.state()).isEqualTo("STARTED");
         }
 
         @POST
