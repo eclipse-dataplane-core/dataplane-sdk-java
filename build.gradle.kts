@@ -18,7 +18,7 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:2.21.0")
     implementation("jakarta.ws.rs:jakarta.ws.rs-api:4.0.0")
 
-    testImplementation(platform("org.junit:junit-bom:6.0.2"))
+    testImplementation(platform("org.junit:junit-bom:6.0.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("io.rest-assured:rest-assured:6.0.0")
