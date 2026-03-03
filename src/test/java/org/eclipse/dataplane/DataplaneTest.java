@@ -124,8 +124,6 @@ class DataplaneTest {
 
             var dataplane = Dataplane.newInstance()
                     .id("dataplane-id")
-                    .name("dataplane-name")
-                    .description("dataplane-description")
                     .endpoint("http://localhost/dataplane")
                     .transferType("SupportedTransferType-PUSH")
                     .label("label-one").label("label-two")
@@ -137,8 +135,6 @@ class DataplaneTest {
             controlPlane.verify(postRequestedFor(urlPathEqualTo("/dataplanes/register"))
                     .withRequestBody(and(
                             matchingJsonPath("dataplaneId", equalTo("dataplane-id")),
-                            matchingJsonPath("name", equalTo("dataplane-name")),
-                            matchingJsonPath("description", equalTo("dataplane-description")),
                             matchingJsonPath("endpoint", equalTo("http://localhost/dataplane")),
                             matchingJsonPath("transferTypes[0]", equalTo("SupportedTransferType-PUSH")),
                             matchingJsonPath("labels.size()", equalTo("2"))
@@ -152,8 +148,6 @@ class DataplaneTest {
 
             var dataplane = Dataplane.newInstance()
                     .id("dataplane-id")
-                    .name("dataplane-name")
-                    .description("dataplane-description")
                     .endpoint("http://localhost/dataplane")
                     .transferType("SupportedTransferType-PUSH")
                     .label("label-one").label("label-two")

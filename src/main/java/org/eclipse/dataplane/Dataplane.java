@@ -55,8 +55,6 @@ public class Dataplane {
     private final ObjectMapper objectMapper = new ObjectMapper().configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
     private final DataFlowStore store = new InMemoryDataFlowStore(objectMapper);
     private String id;
-    private String name;
-    private String description;
     private String endpoint;
     private final Set<String> transferTypes = new HashSet<>();
     private final Set<String> labels = new HashSet<>();
@@ -269,7 +267,7 @@ public class Dataplane {
 
     public Result<Void> registerOn(String controlPlaneEndpoint) {
 
-        var message = new DataPlaneRegistrationMessage(id, name, description, endpoint, transferTypes, labels);
+        var message = new DataPlaneRegistrationMessage(id, endpoint, transferTypes, labels);
 
         return toJson(message)
                 .map(body -> HttpRequest.newBuilder()
@@ -334,16 +332,6 @@ public class Dataplane {
 
         public Builder id(String id) {
             dataplane.id = id;
-            return this;
-        }
-
-        public Builder name(String name) {
-            dataplane.name = name;
-            return this;
-        }
-
-        public Builder description(String description) {
-            dataplane.description = description;
             return this;
         }
 
