@@ -18,6 +18,7 @@ package org.eclipse.dataplane;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.domain.Result;
+import org.eclipse.dataplane.domain.controlplane.ControlPlane;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowResponseMessage;
@@ -26,6 +27,7 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
+import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
 import org.eclipse.dataplane.domain.registration.DataPlaneRegistrationMessage;
 import org.eclipse.dataplane.logic.OnCompleted;
 import org.eclipse.dataplane.logic.OnPrepare;
@@ -33,10 +35,13 @@ import org.eclipse.dataplane.logic.OnStart;
 import org.eclipse.dataplane.logic.OnStarted;
 import org.eclipse.dataplane.logic.OnSuspend;
 import org.eclipse.dataplane.logic.OnTerminate;
+import org.eclipse.dataplane.port.DataPlaneRegistrationApiController;
 import org.eclipse.dataplane.port.DataPlaneSignalingApiController;
 import org.eclipse.dataplane.port.exception.DataFlowNotifyControlPlaneFailed;
 import org.eclipse.dataplane.port.exception.DataplaneNotRegistered;
+import org.eclipse.dataplane.port.store.ControlPlaneStore;
 import org.eclipse.dataplane.port.store.DataFlowStore;
+import org.eclipse.dataplane.port.store.InMemoryControlPlaneStore;
 import org.eclipse.dataplane.port.store.InMemoryDataFlowStore;
 
 import java.net.URI;
@@ -53,7 +58,8 @@ import static java.util.Collections.emptyMap;
 public class Dataplane {
 
     private final ObjectMapper objectMapper = new ObjectMapper().configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
-    private final DataFlowStore store = new InMemoryDataFlowStore(objectMapper);
+    private final DataFlowStore dataFlowStore = new InMemoryDataFlowStore(objectMapper);
+    private final ControlPlaneStore controlPlaneStore = new InMemoryControlPlaneStore(objectMapper);
     private String id;
     private String endpoint;
     private final Set<String> transferTypes = new HashSet<>();
@@ -76,16 +82,20 @@ public class Dataplane {
         return new DataPlaneSignalingApiController(this);
     }
 
+    public DataPlaneRegistrationApiController registrationController() {
+        return new DataPlaneRegistrationApiController(this);
+    }
+
     public Result<DataFlow> getById(String dataFlowId) {
-        return store.findById(dataFlowId);
+        return dataFlowStore.findById(dataFlowId);
     }
 
     public Result<Void> save(DataFlow dataFlow) {
-        return store.save(dataFlow);
+        return dataFlowStore.save(dataFlow);
     }
 
     public Result<DataFlowStatusResponseMessage> status(String dataFlowId) {
-        return store.findById(dataFlowId)
+        return dataFlowStore.findById(dataFlowId)
                 .map(f -> new DataFlowStatusResponseMessage(f.getId(), f.getState().name()));
     }
 
@@ -153,24 +163,24 @@ public class Dataplane {
     }
 
     public Result<Void> suspend(String flowId, DataFlowSuspendMessage message) {
-        return store.findById(flowId)
+        return dataFlowStore.findById(flowId)
                 .map(dataFlow -> {
                     dataFlow.transitionToSuspended(message.reason());
                     return dataFlow;
                 })
                 .compose(onSuspend::action)
-                .compose(store::save)
+                .compose(dataFlowStore::save)
                 .map(it -> null);
     }
 
     public Result<Void> terminate(String dataFlowId, DataFlowTerminateMessage message) {
-        return store.findById(dataFlowId)
+        return dataFlowStore.findById(dataFlowId)
                 .map(dataFlow -> {
                     dataFlow.transitionToTerminated(message.reason());
                     return dataFlow;
                 })
                 .compose(onTerminate::action)
-                .compose(store::save)
+                .compose(dataFlowStore::save)
                 .map(it -> null);
     }
 
@@ -180,7 +190,7 @@ public class Dataplane {
      * @param dataFlowId the data flow id.
      */
     public Result<Void> notifyPrepared(String dataFlowId, OnPrepare onPrepare) {
-        return store.findById(dataFlowId)
+        return dataFlowStore.findById(dataFlowId)
                 .compose(onPrepare::action)
                 .compose(dataFlow -> {
                     dataFlow.transitionToPrepared();
@@ -197,7 +207,7 @@ public class Dataplane {
      * @param dataFlowId the data flow id.
      */
     public Result<Void> notifyStarted(String dataFlowId, OnStart onStart) {
-        return store.findById(dataFlowId)
+        return dataFlowStore.findById(dataFlowId)
                 .compose(onStart::action)
                 .compose(dataFlow -> {
                     dataFlow.transitionToStarted();
@@ -215,7 +225,7 @@ public class Dataplane {
      * @param dataFlowId id of the data flow
      */
     public Result<Void> notifyCompleted(String dataFlowId) {
-        return store.findById(dataFlowId)
+        return dataFlowStore.findById(dataFlowId)
                 .compose(dataFlow -> {
                     dataFlow.transitionToCompleted();
 
@@ -230,7 +240,7 @@ public class Dataplane {
      * @param throwable  the error
      */
     public Result<Void> notifyErrored(String dataFlowId, Throwable throwable) {
-        return store.findById(dataFlowId)
+        return dataFlowStore.findById(dataFlowId)
                 .compose(dataFlow -> {
                     dataFlow.transitionToTerminated(throwable.getMessage());
 
@@ -239,7 +249,7 @@ public class Dataplane {
     }
 
     public Result<Void> started(String flowId, DataFlowStartedNotificationMessage startedNotificationMessage) {
-        return store.findById(flowId)
+        return dataFlowStore.findById(flowId)
                 .map(dataFlow -> {
                     dataFlow.setDataAddress(startedNotificationMessage.dataAddress());
                     return dataFlow;
@@ -258,7 +268,7 @@ public class Dataplane {
      * @return result indicating whether data flow was completed successfully
      */
     public Result<Void> completed(String flowId) {
-        return store.findById(flowId).compose(onCompleted::action)
+        return dataFlowStore.findById(flowId).compose(onCompleted::action)
                 .compose(dataFlow -> {
                     dataFlow.transitionToCompleted();
                     return save(dataFlow);
@@ -314,6 +324,23 @@ public class Dataplane {
         } catch (JsonProcessingException e) {
             return Result.failure(e);
         }
+    }
+
+    public ControlPlaneStore controlPlaneStore() {
+        return controlPlaneStore;
+    }
+
+    public Result<Void> registerControlPlane(ControlPlaneRegistrationMessage message) {
+        var controlPlane = ControlPlane.newInstance()
+                .id(message.controlplaneId())
+                .endpoint(message.endpoint())
+                .build();
+
+        return controlPlaneStore.save(controlPlane);
+    }
+
+    public Result<Void> deleteControlPlane(String id) {
+        return controlPlaneStore.delete(id);
     }
 
     public static class Builder {

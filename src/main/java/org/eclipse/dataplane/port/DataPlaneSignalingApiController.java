@@ -16,12 +16,10 @@ package org.eclipse.dataplane.port;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.dataplane.Dataplane;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
@@ -31,7 +29,6 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
-import org.eclipse.dataplane.port.exception.DataFlowNotFoundException;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.MediaType.WILDCARD;
@@ -50,7 +47,7 @@ public class DataPlaneSignalingApiController {
     @POST
     @Path("/prepare")
     public Response prepare(DataFlowPrepareMessage message) {
-        var response = dataplane.prepare(message).orElseThrow(this::mapToWsRsException);
+        var response = dataplane.prepare(message).orElseThrow(ExceptionMapper.MAP_TO_WSRS);
         if (response.state().equals(DataFlow.State.PREPARING.name())) {
             return Response.accepted(response).build();
         }
@@ -60,7 +57,7 @@ public class DataPlaneSignalingApiController {
     @POST
     @Path("/start")
     public Response start(DataFlowStartMessage message) {
-        var response = dataplane.start(message).orElseThrow(this::mapToWsRsException);
+        var response = dataplane.start(message).orElseThrow(ExceptionMapper.MAP_TO_WSRS);
         if (response.state().equals(DataFlow.State.STARTING.name())) {
             return Response.accepted(response).build();
         }
@@ -70,21 +67,21 @@ public class DataPlaneSignalingApiController {
     @POST
     @Path("/{flowId}/suspend")
     public Response suspend(@PathParam("flowId") String flowId, DataFlowSuspendMessage message) {
-        dataplane.suspend(flowId, message).orElseThrow(this::mapToWsRsException);
+        dataplane.suspend(flowId, message).orElseThrow(ExceptionMapper.MAP_TO_WSRS);
         return Response.ok().build();
     }
 
     @POST
     @Path("/{flowId}/terminate")
     public Response terminate(@PathParam("flowId") String flowId, DataFlowTerminateMessage message) {
-        dataplane.terminate(flowId, message).orElseThrow(this::mapToWsRsException);
+        dataplane.terminate(flowId, message).orElseThrow(ExceptionMapper.MAP_TO_WSRS);
         return Response.ok().build();
     }
 
     @POST
     @Path("/{flowId}/started")
     public Response started(@PathParam("flowId") String flowId, DataFlowStartedNotificationMessage startedNotificationMessage) {
-        dataplane.started(flowId, startedNotificationMessage).orElseThrow(this::mapToWsRsException);
+        dataplane.started(flowId, startedNotificationMessage).orElseThrow(ExceptionMapper.MAP_TO_WSRS);
         return Response.ok().build();
     }
 
@@ -92,21 +89,14 @@ public class DataPlaneSignalingApiController {
     @Path("/{flowId}/completed")
     @Consumes(WILDCARD)
     public Response completed(@PathParam("flowId") String flowId) {
-        dataplane.completed(flowId).orElseThrow(this::mapToWsRsException);
+        dataplane.completed(flowId).orElseThrow(ExceptionMapper.MAP_TO_WSRS);
         return Response.ok().build();
     }
 
     @GET
     @Path("/{flowId}/status")
     public DataFlowStatusResponseMessage status(@PathParam("flowId") String flowId) {
-        return dataplane.status(flowId).orElseThrow(this::mapToWsRsException);
-    }
-
-    private WebApplicationException mapToWsRsException(Exception exception) {
-        if (exception instanceof DataFlowNotFoundException notFound) {
-            return new NotFoundException(notFound);
-        }
-        return new WebApplicationException("unexpected internal server error");
+        return dataplane.status(flowId).orElseThrow(ExceptionMapper.MAP_TO_WSRS);
     }
 
 }
