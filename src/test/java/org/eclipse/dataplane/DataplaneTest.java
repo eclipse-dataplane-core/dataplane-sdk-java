@@ -17,9 +17,9 @@ package org.eclipse.dataplane;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
-import org.eclipse.dataplane.port.exception.DataFlowNotFoundException;
 import org.eclipse.dataplane.port.exception.DataFlowNotifyControlPlaneFailed;
 import org.eclipse.dataplane.port.exception.DataplaneNotRegistered;
+import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -67,7 +67,7 @@ class DataplaneTest {
             var result = dataplane.notifyCompleted("dataFlowId");
 
             assertThat(result.failed()).isTrue();
-            assertThatThrownBy(result::orElseThrow).isExactlyInstanceOf(DataFlowNotFoundException.class);
+            assertThatThrownBy(result::orElseThrow).isExactlyInstanceOf(ResourceNotFoundException.class);
         }
 
         @Test
