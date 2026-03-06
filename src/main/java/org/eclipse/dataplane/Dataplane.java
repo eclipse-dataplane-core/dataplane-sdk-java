@@ -27,6 +27,8 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
+import org.eclipse.dataplane.domain.registration.Authorization;
+import org.eclipse.dataplane.domain.registration.AuthorizationType;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
 import org.eclipse.dataplane.domain.registration.DataPlaneRegistrationMessage;
 import org.eclipse.dataplane.logic.OnCompleted;
@@ -37,6 +39,7 @@ import org.eclipse.dataplane.logic.OnSuspend;
 import org.eclipse.dataplane.logic.OnTerminate;
 import org.eclipse.dataplane.port.DataPlaneRegistrationApiController;
 import org.eclipse.dataplane.port.DataPlaneSignalingApiController;
+import org.eclipse.dataplane.port.exception.AuthorizationNotSupported;
 import org.eclipse.dataplane.port.exception.DataFlowNotifyControlPlaneFailed;
 import org.eclipse.dataplane.port.exception.DataplaneNotRegistered;
 import org.eclipse.dataplane.port.store.ControlPlaneStore;
@@ -48,9 +51,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static java.util.Collections.emptyMap;
@@ -73,6 +79,7 @@ public class Dataplane {
     private OnCompleted onCompleted = dataFlow -> Result.failure(new UnsupportedOperationException("onCompleted is not implemented"));
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final Map<String, AuthorizationType> authorizationTypes = new HashMap<>();
 
     public static Builder newInstance() {
         return new Builder();
@@ -229,7 +236,7 @@ public class Dataplane {
                 .compose(dataFlow -> {
                     dataFlow.transitionToCompleted();
 
-                    return notifyControlPlane("completed", dataFlow, emptyMap()); // TODO DataFlowCompletedMessage not defined
+                    return notifyControlPlane("completed", dataFlow, emptyMap());
                 });
     }
 
@@ -300,13 +307,22 @@ public class Dataplane {
         return toJson(message)
                 .map(body -> {
                     var endpoint = dataFlow.callbackEndpointFor(action);
-                    var request = HttpRequest.newBuilder()
+                    var requestBuilder = HttpRequest.newBuilder()
                             .uri(URI.create(endpoint))
                             .header("content-type", "application/json")
-                            .POST(HttpRequest.BodyPublishers.ofString(body))
-                            .build();
+                            .POST(HttpRequest.BodyPublishers.ofString(body));
 
-                    return httpClient.send(request, HttpResponse.BodyHandlers.discarding());
+                    var controlPlane = controlPlaneStore.findByEndpoint(dataFlow.getCallbackAddress());
+                    if (controlPlane.succeeded()) {
+                        var authorization = controlPlane.getContent().authorization();
+                        if (authorization != null) {
+                            var authorizationType = authorizationTypes.get(authorization.getType());
+                            var castAuthorization = objectMapper.convertValue(authorization, authorizationType.authorizationClass());
+                            authorizationType.authorizationFunction().accept(requestBuilder, castAuthorization);
+                        }
+                    }
+
+                    return httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.discarding());
                 })
                 .compose(response -> {
                     var successful = response.statusCode() >= 200 && response.statusCode() < 300;
@@ -331,9 +347,16 @@ public class Dataplane {
     }
 
     public Result<Void> registerControlPlane(ControlPlaneRegistrationMessage message) {
+        for (var auth : message.authorization()) {
+            if (!authorizationTypes.containsKey(auth.getType())) {
+                return Result.failure(new AuthorizationNotSupported(auth));
+            }
+        }
+
         var controlPlane = ControlPlane.newInstance()
                 .id(message.controlplaneId())
                 .endpoint(message.endpoint())
+                .authorization(message.authorization())
                 .build();
 
         return controlPlaneStore.save(controlPlane);
@@ -404,6 +427,11 @@ public class Dataplane {
 
         public Builder onTerminate(OnTerminate onTerminate) {
             dataplane.onTerminate = onTerminate;
+            return this;
+        }
+
+        public <T extends Authorization> Builder registerAuthorization(String type, Class<T> authorizationClass, BiConsumer<HttpRequest.Builder, T> authorizationFunction) {
+            dataplane.authorizationTypes.put(type, new AuthorizationType<>(type, authorizationClass, authorizationFunction));
             return this;
         }
     }

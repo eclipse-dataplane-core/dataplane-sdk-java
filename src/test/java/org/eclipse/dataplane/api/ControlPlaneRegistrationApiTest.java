@@ -12,28 +12,32 @@
  *
  */
 
-package org.eclipse.dataplane.scenario;
+package org.eclipse.dataplane.api;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.restassured.http.ContentType;
 import org.eclipse.dataplane.Dataplane;
 import org.eclipse.dataplane.HttpServer;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
+import org.eclipse.dataplane.domain.registration.RawAuthorization;
 import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
-class ControlPlaneRegistrationTest {
+class ControlPlaneRegistrationApiTest {
 
     private final HttpServer httpServer = new HttpServer(21361);
     private final Dataplane sdk = Dataplane.newInstance()
             .id("consumer")
+            .registerAuthorization("test-authorization", TestAuthorization.class, (requestBuilder, authorization) -> {})
             .build();
 
     @BeforeEach
@@ -103,6 +107,47 @@ class ControlPlaneRegistrationTest {
             assertThat(result.succeeded());
             assertThat(result.getContent().getEndpoint()).isEqualTo("http://new-endpoint");
         }
+
+        @Test
+        void shouldReturnBadRequest_whenRequestedAuthMethodNotSupported() {
+            var controlPlaneId = UUID.randomUUID().toString();
+            var authorization = new RawAuthorization() {
+
+                @Override
+                public String getType() {
+                    return "unsupported";
+                }
+            };
+            var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(controlPlaneId, "http://something", List.of(authorization));
+
+            given()
+                    .contentType(ContentType.JSON)
+                    .basePath("/runtime/data-plane")
+                    .port(httpServer.port())
+                    .body(controlPlaneRegistrationMessage)
+                    .put("/v1/controlplanes")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(400);
+        }
+
+
+        @Test
+        void shouldRegisterAuthorizationType() {
+            var controlPlaneId = UUID.randomUUID().toString();
+            var authorization = new TestAuthorization("token");
+            var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(controlPlaneId, "http://something", List.of(authorization));
+
+            given()
+                    .contentType(ContentType.JSON)
+                    .basePath("/runtime/data-plane")
+                    .port(httpServer.port())
+                    .body(controlPlaneRegistrationMessage)
+                    .put("/v1/controlplanes")
+                    .then()
+                    .log().ifValidationFails()
+                    .statusCode(200);
+        }
     }
 
     @Nested
@@ -152,4 +197,22 @@ class ControlPlaneRegistrationTest {
         }
     }
 
+    private static class TestAuthorization extends RawAuthorization {
+
+        @JsonProperty("type") private final String type = "test-authorization";
+        @JsonProperty("token") private String token;
+
+        TestAuthorization(String token) {
+            this.token = token;
+        }
+
+        @Override
+        public String getType() {
+            return type;
+        }
+
+        public String getToken() {
+            return token;
+        }
+    }
 }

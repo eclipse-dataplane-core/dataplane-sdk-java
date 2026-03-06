@@ -22,6 +22,7 @@ import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class InMemoryControlPlaneStore implements ControlPlaneStore {
 
@@ -44,17 +45,12 @@ public class InMemoryControlPlaneStore implements ControlPlaneStore {
 
     @Override
     public Result<ControlPlane> findById(String controlplaneId) {
-        var dataFlow = store.get(controlplaneId);
-        if (dataFlow == null) {
+        var json = store.get(controlplaneId);
+        if (json == null) {
             return Result.failure(new ResourceNotFoundException("ControlPlane %s not found".formatted(controlplaneId)));
         }
 
-        try {
-            var deserialized = objectMapper.readValue(dataFlow, ControlPlane.class);
-            return Result.success(deserialized);
-        } catch (JsonProcessingException e) {
-            return Result.failure(e);
-        }
+        return deserialize(json);
     }
 
     @Override
@@ -64,5 +60,22 @@ public class InMemoryControlPlaneStore implements ControlPlaneStore {
             return Result.failure(new ResourceNotFoundException("ControlPlane %s not found".formatted(id)));
         }
         return Result.success();
+    }
+
+    @Override
+    public Result<ControlPlane> findByEndpoint(String endpoint) {
+        return store.values().stream().map(this::deserialize).filter(Result::succeeded)
+                .map(Result::getContent).filter(it -> Objects.equals(endpoint, it.getEndpoint()))
+                .findAny().map(Result::success)
+                .orElseGet(() -> Result.failure(new ResourceNotFoundException("ControlPlane with endpoint %s not found".formatted(endpoint))));
+    }
+
+    private Result<ControlPlane> deserialize(String json) {
+        try {
+            var deserialized = objectMapper.readValue(json, ControlPlane.class);
+            return Result.success(deserialized);
+        } catch (JsonProcessingException e) {
+            return Result.failure(e);
+        }
     }
 }

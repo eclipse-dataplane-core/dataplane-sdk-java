@@ -14,16 +14,13 @@
 
 package org.eclipse.dataplane.domain.registration;
 
-import java.util.List;
+import java.net.http.HttpRequest;
+import java.util.function.BiConsumer;
 
-import static java.util.Collections.emptyList;
-
-public record ControlPlaneRegistrationMessage(
-        String controlplaneId,
-        String endpoint,
-        List<RawAuthorization> authorization
+public record AuthorizationType<T extends Authorization>(
+        String type,
+        Class<T> authorizationClass,
+        BiConsumer<HttpRequest.Builder, T> authorizationFunction // TODO: dedicated interface
 ) {
-    public ControlPlaneRegistrationMessage(String controlplaneId, String endpoint) {
-        this(controlplaneId, endpoint, emptyList());
-    }
+
 }
