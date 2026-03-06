@@ -14,16 +14,7 @@
 
 package org.eclipse.dataplane.domain.registration;
 
-import java.util.List;
+public interface Authorization {
 
-import static java.util.Collections.emptyList;
-
-public record ControlPlaneRegistrationMessage(
-        String controlplaneId,
-        String endpoint,
-        List<RawAuthorization> authorization
-) {
-    public ControlPlaneRegistrationMessage(String controlplaneId, String endpoint) {
-        this(controlplaneId, endpoint, emptyList());
-    }
+    String getType();
 }

@@ -16,6 +16,8 @@ package org.eclipse.dataplane;
 
 import io.restassured.response.ValidatableResponse;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -26,8 +28,10 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Predicate;
 
 import static jakarta.ws.rs.core.MediaType.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,14 +46,22 @@ public class ControlPlane {
     private final DataplaneClient consumerClient;
     private final DataplaneClient providerClient;
     private final HttpServer httpServer;
+    private String authorizationToken;
 
     public ControlPlane(HttpServer httpServer, String consumerDataPlanePath, String providerDataPlanePath) {
         this.httpServer = httpServer;
         consumerClient = new DataplaneClient("http://localhost:%d%s".formatted(httpServer.port(), consumerDataPlanePath));
         providerClient = new DataplaneClient("http://localhost:%d%s".formatted(httpServer.port(), providerDataPlanePath));
 
-        httpServer.deploy("/consumer/control-plane", new ControlPlaneController(providerClient));
-        httpServer.deploy("/provider/control-plane", new ControlPlaneController(consumerClient));
+        Predicate<String> authorizationProvider = authorization -> {
+            if (authorizationToken != null) {
+                return Objects.equals(authorization, authorizationToken);
+            }
+            return true;
+        };
+
+        httpServer.deploy("/consumer/control-plane", new ControlPlaneController(providerClient, authorizationProvider));
+        httpServer.deploy("/provider/control-plane", new ControlPlaneController(consumerClient, authorizationProvider));
 
     }
 
@@ -89,34 +101,49 @@ public class ControlPlane {
         return "http://localhost:%d/consumer/control-plane".formatted(httpServer.port());
     }
 
+    public void setAuthorizationToken(String token) {
+        authorizationToken = token;
+    }
+
     @Path("/transfers")
     public static class ControlPlaneController {
 
         private final ExecutorService executor = Executors.newCachedThreadPool();
         private final DataplaneClient counterPart;
+        private final Predicate<String> authorizationProvider;
 
-        public ControlPlaneController(DataplaneClient counterPart) {
+        public ControlPlaneController(DataplaneClient counterPart, Predicate<String> authorizationProvider) {
             this.counterPart = counterPart;
+            this.authorizationProvider = authorizationProvider;
         }
 
         @POST
         @Path("/{transferId}/dataflow/prepared")
         @Consumes(WILDCARD)
-        public void prepared(@PathParam("transferId") String transferId, DataFlowResponseMessage message) {
+        public void prepared(@PathParam("transferId") String transferId, @HeaderParam("Authorization") String authorization, DataFlowResponseMessage message) {
+            if (!authorizationProvider.test(authorization)) {
+                throw new NotAuthorizedException("Not authorized");
+            }
             assertThat(message.state()).isEqualTo("PREPARED");
         }
 
         @POST
         @Path("/{transferId}/dataflow/started")
         @Consumes(WILDCARD)
-        public void started(@PathParam("transferId") String transferId, DataFlowResponseMessage message) {
+        public void started(@PathParam("transferId") String transferId, @HeaderParam("Authorization") String authorization, DataFlowResponseMessage message) {
+            if (!authorizationProvider.test(authorization)) {
+                throw new NotAuthorizedException("Not authorized");
+            }
             assertThat(message.state()).isEqualTo("STARTED");
         }
 
         @POST
         @Path("/{transferId}/dataflow/completed")
         @Consumes(WILDCARD)
-        public void completed(@PathParam("transferId") String transferId) {
+        public void completed(@PathParam("transferId") String transferId, @HeaderParam("Authorization") String authorization) {
+            if (!authorizationProvider.test(authorization)) {
+                throw new NotAuthorizedException("Not authorized");
+            }
             executor.submit(() -> {
                 var idPart = transferId.split("_")[1];
                 counterPart.completed("consumer_" + idPart).statusCode(200);
@@ -126,7 +153,10 @@ public class ControlPlane {
         @POST
         @Path("/{transferId}/dataflow/errored")
         @Consumes(WILDCARD)
-        public void errored(@PathParam("transferId") String transferId) {
+        public void errored(@PathParam("transferId") String transferId, @HeaderParam("Authorization") String authorization) {
+            if (!authorizationProvider.test(authorization)) {
+                throw new NotAuthorizedException("Not authorized");
+            }
             executor.submit(() -> {
                 var idPart = transferId.split("_")[1];
                 counterPart.terminate("consumer_" + idPart, new DataFlowTerminateMessage("terminated by provider")).statusCode(200);
@@ -134,4 +164,5 @@ public class ControlPlane {
         }
 
     }
+
 }

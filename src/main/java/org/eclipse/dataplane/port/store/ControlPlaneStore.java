@@ -23,4 +23,6 @@ public interface ControlPlaneStore {
     Result<ControlPlane> findById(String controlplaneId);
 
     Result<Void> delete(String id);
+
+    Result<ControlPlane> findByEndpoint(String endpoint);
 }

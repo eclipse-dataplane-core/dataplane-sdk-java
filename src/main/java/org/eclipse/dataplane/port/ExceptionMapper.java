@@ -14,8 +14,10 @@
 
 package org.eclipse.dataplane.port;
 
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
+import org.eclipse.dataplane.port.exception.AuthorizationNotSupported;
 import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
 
 import java.util.function.Function;
@@ -26,6 +28,11 @@ public interface ExceptionMapper {
         if (exception instanceof ResourceNotFoundException notFound) {
             return new NotFoundException(notFound);
         }
+
+        if (exception instanceof AuthorizationNotSupported authorizationNotSupported) {
+            return new BadRequestException(authorizationNotSupported);
+        }
+
         return new WebApplicationException("unexpected internal server error");
     };
 
