@@ -14,12 +14,19 @@
 
 package org.eclipse.dataplane.domain.controlplane;
 
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
+import org.eclipse.dataplane.domain.registration.Authorization;
+import org.eclipse.dataplane.domain.registration.RawAuthorization;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class ControlPlane {
 
     private String id;
     private String endpoint;
+    private final List<RawAuthorization> authorizations = new ArrayList<>();
 
     public String getId() {
         return id;
@@ -33,6 +40,15 @@ public class ControlPlane {
         return new ControlPlane.Builder();
     }
 
+    public List<RawAuthorization> getAuthorizations() {
+        return authorizations;
+    }
+
+    public Authorization authorization() {
+        return getAuthorizations().stream().findAny().orElse(null);
+    }
+
+    @JsonPOJOBuilder
     public static class Builder {
         private final ControlPlane controlPlane = new ControlPlane();
 
@@ -53,6 +69,11 @@ public class ControlPlane {
 
         public Builder endpoint(String endpoint) {
             controlPlane.endpoint = endpoint;
+            return this;
+        }
+
+        public Builder authorization(List<RawAuthorization> authorizations) {
+            controlPlane.authorizations.addAll(authorizations);
             return this;
         }
     }
