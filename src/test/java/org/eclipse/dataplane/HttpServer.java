@@ -30,13 +30,12 @@ public class HttpServer {
 
     private final Server server;
     private final ServletContextHandler servletContextHandler = new ServletContextHandler(NO_SESSIONS);
-    private final int port;
+    private final ServerConnector connector;
 
-    public HttpServer(int port) {
-        this.port = port;
+    public HttpServer() {
         server = new Server();
-        var connector = new ServerConnector(server);
-        connector.setPort(port);
+        connector = new ServerConnector(server);
+        connector.setPort(0);
         server.setConnectors(new Connector[]{connector});
         server.setHandler(servletContextHandler);
     }
@@ -78,6 +77,6 @@ public class HttpServer {
     }
 
     public int port() {
-        return port;
+        return connector.getLocalPort();
     }
 }

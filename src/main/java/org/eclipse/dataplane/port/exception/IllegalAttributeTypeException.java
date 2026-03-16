@@ -12,15 +12,10 @@
  *
  */
 
-package org.eclipse.dataplane.domain.registration;
+package org.eclipse.dataplane.port.exception;
 
-import java.net.http.HttpRequest;
-import java.util.function.BiConsumer;
-
-public record AuthorizationType<T extends Authorization>(
-        String type,
-        Class<T> authorizationClass,
-        BiConsumer<HttpRequest.Builder, T> authorizationFunction // TODO: dedicated interface
-) {
-
+public class IllegalAttributeTypeException extends RuntimeException {
+    public IllegalAttributeTypeException(String message) {
+        super(message);
+    }
 }

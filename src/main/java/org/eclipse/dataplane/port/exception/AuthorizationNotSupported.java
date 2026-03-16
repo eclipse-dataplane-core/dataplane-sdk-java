@@ -14,12 +14,12 @@
 
 package org.eclipse.dataplane.port.exception;
 
-import org.eclipse.dataplane.domain.registration.Authorization;
+import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
 
 public class AuthorizationNotSupported extends Exception {
 
-    public AuthorizationNotSupported(Authorization authorization) {
-        super("Authorization type " + authorization.getType() + " not supported");
+    public AuthorizationNotSupported(AuthorizationProfile authorizationProfile) {
+        super("Authorization type " + authorizationProfile.getType() + " not supported");
     }
 
 }

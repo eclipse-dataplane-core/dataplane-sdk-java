@@ -56,7 +56,6 @@ class DataplaneTest {
         controlPlane.stop();
     }
 
-
     @Nested
     class NotifyCompleted {
 

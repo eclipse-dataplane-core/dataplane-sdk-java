@@ -14,18 +14,19 @@
 
 package org.eclipse.dataplane.api;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.restassured.http.ContentType;
 import org.eclipse.dataplane.Dataplane;
 import org.eclipse.dataplane.HttpServer;
+import org.eclipse.dataplane.domain.registration.Authorization;
+import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
-import org.eclipse.dataplane.domain.registration.RawAuthorization;
 import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.net.http.HttpRequest;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,10 +35,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ControlPlaneRegistrationApiTest {
 
-    private final HttpServer httpServer = new HttpServer(21361);
+    private final HttpServer httpServer = new HttpServer();
     private final Dataplane sdk = Dataplane.newInstance()
             .id("consumer")
-            .registerAuthorization("test-authorization", TestAuthorization.class, (requestBuilder, authorization) -> {})
+            .registerAuthorization(new TestAuthorization())
             .build();
 
     @BeforeEach
@@ -111,13 +112,7 @@ class ControlPlaneRegistrationApiTest {
         @Test
         void shouldReturnBadRequest_whenRequestedAuthMethodNotSupported() {
             var controlPlaneId = UUID.randomUUID().toString();
-            var authorization = new RawAuthorization() {
-
-                @Override
-                public String getType() {
-                    return "unsupported";
-                }
-            };
+            var authorization = new AuthorizationProfile("unsupported");
             var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(controlPlaneId, "http://something", List.of(authorization));
 
             given()
@@ -135,7 +130,7 @@ class ControlPlaneRegistrationApiTest {
         @Test
         void shouldRegisterAuthorizationType() {
             var controlPlaneId = UUID.randomUUID().toString();
-            var authorization = new TestAuthorization("token");
+            var authorization = new AuthorizationProfile("token");
             var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(controlPlaneId, "http://something", List.of(authorization));
 
             given()
@@ -197,22 +192,17 @@ class ControlPlaneRegistrationApiTest {
         }
     }
 
-    private static class TestAuthorization extends RawAuthorization {
+    private static class TestAuthorization implements Authorization {
 
-        @JsonProperty("type") private final String type = "test-authorization";
-        @JsonProperty("token") private String token;
-
-        TestAuthorization(String token) {
-            this.token = token;
+        @Override
+        public String type() {
+            return "token";
         }
 
         @Override
-        public String getType() {
-            return type;
-        }
-
-        public String getToken() {
-            return token;
+        public HttpRequest.Builder apply(HttpRequest.Builder requestBuilder, AuthorizationProfile profile) {
+            return requestBuilder.header("Authorization", profile.stringAttribute("token"));
         }
     }
+
 }

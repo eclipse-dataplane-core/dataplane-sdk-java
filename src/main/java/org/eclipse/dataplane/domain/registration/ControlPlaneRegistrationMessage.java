@@ -21,7 +21,7 @@ import static java.util.Collections.emptyList;
 public record ControlPlaneRegistrationMessage(
         String controlplaneId,
         String endpoint,
-        List<RawAuthorization> authorization
+        List<AuthorizationProfile> authorization
 ) {
     public ControlPlaneRegistrationMessage(String controlplaneId, String endpoint) {
         this(controlplaneId, endpoint, emptyList());

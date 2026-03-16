@@ -20,12 +20,15 @@ import org.eclipse.dataplane.HttpServer;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowResponseMessage;
+import org.eclipse.dataplane.domain.registration.Authorization;
+import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
-import org.eclipse.dataplane.domain.registration.RawAuthorization;
 import org.jspecify.annotations.NonNull;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.net.http.HttpRequest;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,12 +38,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class AuthorizationTest {
 
-    private final HttpServer httpServer = new HttpServer(21961);
-    private final ControlPlane controlPlane = new ControlPlane(httpServer, "/data-plane", "/data-plane");
+    private final HttpServer httpServer = new HttpServer();
+    private final ControlPlane controlPlane = new ControlPlane();
     private final Dataplane dataPlane = Dataplane.newInstance()
             .id("data-plane")
-            .registerAuthorization("test-authorization", TestAuthorization.class,
-                    (builder, authorization) -> builder.header("Authorization", authorization.getToken()))
+            .registerAuthorization(new TestAuthorization())
             .onPrepare(dataFlow -> {
                 dataFlow.transitionToPreparing();
                 return Result.success(dataFlow);
@@ -50,18 +52,27 @@ public class AuthorizationTest {
     @BeforeEach
     void setUp() {
         httpServer.start();
+        controlPlane.initialize(httpServer, "/data-plane", "/data-plane");
 
         httpServer.deploy("/data-plane", dataPlane.controller());
+    }
+
+    @AfterEach
+    void tearDown() {
+        httpServer.stop();
     }
 
     @Test
     void shouldCommunicateWithControlPlaneUsingRegisteredAuthorization() {
         var authorizationToken = UUID.randomUUID().toString();
-        controlPlane.setAuthorizationToken(authorizationToken);
+        controlPlane.setAuthorizationValidation(requestContext ->
+                requestContext.containsHeaderString("Authorization", a -> a.equals(authorizationToken)));
+        var authorizationProfile = new AuthorizationProfile("test-authorization");
+        authorizationProfile.setAttribute("token", authorizationToken);
         var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(
                 UUID.randomUUID().toString(),
                 controlPlane.consumerCallbackAddress(),
-                List.of(new TestAuthorization(authorizationToken))
+                List.of(authorizationProfile)
         );
         dataPlane.registerControlPlane(controlPlaneRegistrationMessage).orElseThrow(RuntimeException::new);
 
@@ -84,28 +95,17 @@ public class AuthorizationTest {
                 transferType, emptyList(), emptyMap());
     }
 
-    private static class TestAuthorization extends RawAuthorization {
+    private static class TestAuthorization implements Authorization {
 
-        private final String type;
-        private String token;
-
-        TestAuthorization() {
-            type = "test-authorization";
-        }
-
-        TestAuthorization(String token) {
-            this();
-            this.token = token;
+        @Override
+        public String type() {
+            return "test-authorization";
         }
 
         @Override
-        public String getType() {
-            return type;
+        public HttpRequest.Builder apply(HttpRequest.Builder requestBuilder, AuthorizationProfile profile) {
+            return requestBuilder.header("Authorization", profile.stringAttribute("token"));
         }
-
-        public String getToken() {
-            return token;
-        }
-
     }
+
 }
