@@ -28,7 +28,6 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 import org.eclipse.dataplane.domain.registration.Authorization;
-import org.eclipse.dataplane.domain.registration.AuthorizationType;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
 import org.eclipse.dataplane.domain.registration.DataPlaneRegistrationMessage;
 import org.eclipse.dataplane.logic.OnCompleted;
@@ -56,7 +55,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.BiConsumer;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static java.util.Collections.emptyMap;
@@ -79,7 +77,7 @@ public class Dataplane {
     private OnCompleted onCompleted = dataFlow -> Result.failure(new UnsupportedOperationException("onCompleted is not implemented"));
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
-    private final Map<String, AuthorizationType> authorizationTypes = new HashMap<>();
+    private final Map<String, Authorization> authorizations = new HashMap<>();
 
     public static Builder newInstance() {
         return new Builder();
@@ -314,11 +312,10 @@ public class Dataplane {
 
                     var controlPlane = controlPlaneStore.findByEndpoint(dataFlow.getCallbackAddress());
                     if (controlPlane.succeeded()) {
-                        var authorization = controlPlane.getContent().authorization();
-                        if (authorization != null) {
-                            var authorizationType = authorizationTypes.get(authorization.getType());
-                            var castAuthorization = objectMapper.convertValue(authorization, authorizationType.authorizationClass());
-                            authorizationType.authorizationFunction().accept(requestBuilder, castAuthorization);
+                        var authorizationProfile = controlPlane.getContent().authorization();
+                        if (authorizationProfile != null) {
+                            var authorization = authorizations.get(authorizationProfile.getType());
+                            authorization.apply(requestBuilder, authorizationProfile);
                         }
                     }
 
@@ -348,7 +345,7 @@ public class Dataplane {
 
     public Result<Void> registerControlPlane(ControlPlaneRegistrationMessage message) {
         for (var auth : message.authorization()) {
-            if (!authorizationTypes.containsKey(auth.getType())) {
+            if (!authorizations.containsKey(auth.getType())) {
                 return Result.failure(new AuthorizationNotSupported(auth));
             }
         }
@@ -371,12 +368,14 @@ public class Dataplane {
         private final Dataplane dataplane = new Dataplane();
 
         private Builder() {
+
         }
 
         public Dataplane build() {
             if (dataplane.id == null) {
                 dataplane.id = UUID.randomUUID().toString();
             }
+
             return dataplane;
         }
 
@@ -430,8 +429,8 @@ public class Dataplane {
             return this;
         }
 
-        public <T extends Authorization> Builder registerAuthorization(String type, Class<T> authorizationClass, BiConsumer<HttpRequest.Builder, T> authorizationFunction) {
-            dataplane.authorizationTypes.put(type, new AuthorizationType<>(type, authorizationClass, authorizationFunction));
+        public Builder registerAuthorization(Authorization authorization) {
+            dataplane.authorizations.put(authorization.type(), authorization);
             return this;
         }
     }

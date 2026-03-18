@@ -48,15 +48,16 @@ import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.STARTED;
 
 public class StreamingPushTest {
 
-    private final HttpServer httpServer = new HttpServer(21341);
+    private final HttpServer httpServer = new HttpServer();
 
-    private final ControlPlane controlPlane = new ControlPlane(httpServer, "/consumer/data-plane", "/provider/data-plane");
+    private final ControlPlane controlPlane = new ControlPlane();
     private final ConsumerDataPlane consumerDataPlane = new ConsumerDataPlane();
     private final ProviderDataPlane providerDataPlane = new ProviderDataPlane();
 
     @BeforeEach
     void setUp() {
         httpServer.start();
+        controlPlane.initialize(httpServer, "/consumer/data-plane", "/provider/data-plane");
 
         httpServer.deploy("/consumer/data-plane", consumerDataPlane.controller());
         httpServer.deploy("/provider/data-plane", providerDataPlane.controller());
