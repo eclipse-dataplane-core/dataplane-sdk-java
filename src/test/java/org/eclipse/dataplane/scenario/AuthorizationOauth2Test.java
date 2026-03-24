@@ -41,6 +41,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
@@ -130,7 +131,7 @@ public class AuthorizationOauth2Test {
         }
     }
 
-    private @NonNull DataFlowPrepareMessage createPrepareMessage(String consumerProcessId, String callbackAddress, String transferType) {
+    private @NonNull DataFlowPrepareMessage createPrepareMessage(String consumerProcessId, URI callbackAddress, String transferType) {
         return new DataFlowPrepareMessage("theMessageId", "theParticipantId", "theCounterPartyId",
                 "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", callbackAddress,
                 transferType, emptyList(), emptyMap());

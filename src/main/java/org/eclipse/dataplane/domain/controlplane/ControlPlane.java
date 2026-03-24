@@ -17,6 +17,7 @@ package org.eclipse.dataplane.domain.controlplane;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -24,14 +25,14 @@ import java.util.Objects;
 public class ControlPlane {
 
     private String id;
-    private String endpoint;
+    private URI endpoint;
     private final List<AuthorizationProfile> authorizations = new ArrayList<>();
 
     public String getId() {
         return id;
     }
 
-    public String getEndpoint() {
+    public URI getEndpoint() {
         return endpoint;
     }
 
@@ -66,7 +67,7 @@ public class ControlPlane {
             return this;
         }
 
-        public Builder endpoint(String endpoint) {
+        public Builder endpoint(URI endpoint) {
             controlPlane.endpoint = endpoint;
             return this;
         }

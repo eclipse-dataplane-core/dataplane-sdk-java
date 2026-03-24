@@ -17,6 +17,8 @@ package org.eclipse.dataplane.port.store;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.controlplane.ControlPlane;
 
+import java.net.URI;
+
 public interface ControlPlaneStore {
     Result<Void> save(ControlPlane controlPlane);
 
@@ -24,5 +26,5 @@ public interface ControlPlaneStore {
 
     Result<Void> delete(String id);
 
-    Result<ControlPlane> findByEndpoint(String endpoint);
+    Result<ControlPlane> findByEndpoint(URI endpoint);
 }

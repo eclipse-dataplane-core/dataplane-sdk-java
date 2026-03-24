@@ -20,6 +20,7 @@ import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.controlplane.ControlPlane;
 import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -63,7 +64,7 @@ public class InMemoryControlPlaneStore implements ControlPlaneStore {
     }
 
     @Override
-    public Result<ControlPlane> findByEndpoint(String endpoint) {
+    public Result<ControlPlane> findByEndpoint(URI endpoint) {
         return store.values().stream().map(this::deserialize).filter(Result::succeeded)
                 .map(Result::getContent).filter(it -> Objects.equals(endpoint, it.getEndpoint()))
                 .findAny().map(Result::success)

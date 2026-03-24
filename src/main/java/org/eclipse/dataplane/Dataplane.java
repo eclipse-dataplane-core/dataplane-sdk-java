@@ -65,7 +65,7 @@ public class Dataplane {
     private final DataFlowStore dataFlowStore = new InMemoryDataFlowStore(objectMapper);
     private final ControlPlaneStore controlPlaneStore = new InMemoryControlPlaneStore(objectMapper);
     private String id;
-    private String endpoint;
+    private URI endpoint;
     private final Set<String> transferTypes = new HashSet<>();
     private final Set<String> labels = new HashSet<>();
 
@@ -306,7 +306,7 @@ public class Dataplane {
                 .map(body -> {
                     var endpoint = dataFlow.callbackEndpointFor(action);
                     var requestBuilder = HttpRequest.newBuilder()
-                            .uri(URI.create(endpoint))
+                            .uri(endpoint)
                             .header("content-type", "application/json")
                             .POST(HttpRequest.BodyPublishers.ofString(body));
 
@@ -384,7 +384,7 @@ public class Dataplane {
             return this;
         }
 
-        public Builder endpoint(String endpoint) {
+        public Builder endpoint(URI endpoint) {
             dataplane.endpoint = endpoint;
             return this;
         }
