@@ -30,6 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
@@ -140,13 +141,13 @@ public class ProviderPushTest {
                 .isEqualTo(PREPARED.name());
     }
 
-    private @NonNull DataFlowStartMessage createStartMessage(String providerProcessId, String callbackAddress, String transferType, DataAddress destinationDataAddress) {
+    private @NonNull DataFlowStartMessage createStartMessage(String providerProcessId, URI callbackAddress, String transferType, DataAddress destinationDataAddress) {
         return new DataFlowStartMessage("theMessageId", "theParticipantId", "theCounterPartyId",
                 "theDataspaceContext", providerProcessId, "theAgreementId", "theDatasetId", callbackAddress,
                 transferType, destinationDataAddress, emptyList(), emptyMap());
     }
 
-    private @NonNull DataFlowPrepareMessage createPrepareMessage(String consumerProcessId, String callbackAddress, String transferType) {
+    private @NonNull DataFlowPrepareMessage createPrepareMessage(String consumerProcessId, URI callbackAddress, String transferType) {
         return new DataFlowPrepareMessage("theMessageId", "theParticipantId", "theCounterPartyId",
                 "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", callbackAddress,
                 transferType, emptyList(), emptyMap());

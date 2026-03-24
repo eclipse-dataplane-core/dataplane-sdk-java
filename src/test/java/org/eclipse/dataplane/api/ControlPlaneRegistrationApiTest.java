@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
 import java.net.http.HttpRequest;
 import java.util.List;
 import java.util.UUID;
@@ -40,6 +41,7 @@ class ControlPlaneRegistrationApiTest {
             .id("consumer")
             .registerAuthorization(new TestAuthorization())
             .build();
+    private final URI controlPlaneEndpoint = URI.create("http://something");
 
     @BeforeEach
     void setUp() {
@@ -58,7 +60,7 @@ class ControlPlaneRegistrationApiTest {
         @Test
         void shouldRegisterControlPlane() {
             var controlPlaneId = UUID.randomUUID().toString();
-            var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(controlPlaneId, "http://something");
+            var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(controlPlaneId, controlPlaneEndpoint);
 
             given()
                     .contentType(ContentType.JSON)
@@ -73,13 +75,13 @@ class ControlPlaneRegistrationApiTest {
             var result = sdk.controlPlaneStore().findById(controlPlaneId);
 
             assertThat(result.succeeded());
-            assertThat(result.getContent().getEndpoint()).isEqualTo("http://something");
+            assertThat(result.getContent().getEndpoint()).isEqualTo(controlPlaneEndpoint);
         }
 
         @Test
         void shouldReplaceControlPlane_whenSecondCall() {
             var controlPlaneId = UUID.randomUUID().toString();
-            var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(controlPlaneId, "http://something");
+            var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(controlPlaneId, controlPlaneEndpoint);
 
             given()
                     .contentType(ContentType.JSON)
@@ -91,7 +93,8 @@ class ControlPlaneRegistrationApiTest {
                     .log().ifValidationFails()
                     .statusCode(200);
 
-            var updateControlPlane = new ControlPlaneRegistrationMessage(controlPlaneId, "http://new-endpoint");
+            var newControlPlaneEndpoint = URI.create("http://new-endpoint");
+            var updateControlPlane = new ControlPlaneRegistrationMessage(controlPlaneId, newControlPlaneEndpoint);
 
             given()
                     .contentType(ContentType.JSON)
@@ -106,14 +109,14 @@ class ControlPlaneRegistrationApiTest {
             var result = sdk.controlPlaneStore().findById(controlPlaneId);
 
             assertThat(result.succeeded());
-            assertThat(result.getContent().getEndpoint()).isEqualTo("http://new-endpoint");
+            assertThat(result.getContent().getEndpoint()).isEqualTo(newControlPlaneEndpoint);
         }
 
         @Test
         void shouldReturnBadRequest_whenRequestedAuthMethodNotSupported() {
             var controlPlaneId = UUID.randomUUID().toString();
             var authorization = new AuthorizationProfile("unsupported");
-            var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(controlPlaneId, "http://something", List.of(authorization));
+            var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(controlPlaneId, controlPlaneEndpoint, List.of(authorization));
 
             given()
                     .contentType(ContentType.JSON)
@@ -131,7 +134,7 @@ class ControlPlaneRegistrationApiTest {
         void shouldRegisterAuthorizationType() {
             var controlPlaneId = UUID.randomUUID().toString();
             var authorization = new AuthorizationProfile("token");
-            var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(controlPlaneId, "http://something", List.of(authorization));
+            var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(controlPlaneId, controlPlaneEndpoint, List.of(authorization));
 
             given()
                     .contentType(ContentType.JSON)
@@ -150,7 +153,7 @@ class ControlPlaneRegistrationApiTest {
         @Test
         void shouldDeleteControlPlane() {
             var controlPlaneId = UUID.randomUUID().toString();
-            var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(controlPlaneId, "http://something");
+            var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(controlPlaneId, controlPlaneEndpoint);
 
             given()
                     .contentType(ContentType.JSON)

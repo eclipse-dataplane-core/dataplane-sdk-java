@@ -14,11 +14,12 @@
 
 package org.eclipse.dataplane.domain.registration;
 
+import java.net.URI;
 import java.util.Set;
 
 public record DataPlaneRegistrationMessage(
         String dataplaneId,
-        String endpoint,
+        URI endpoint,
         Set<String> transferTypes,
         Set<String> labels
 // TODO: authorization

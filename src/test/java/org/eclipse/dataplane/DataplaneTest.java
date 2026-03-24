@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.net.ConnectException;
+import java.net.URI;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.and;
@@ -109,7 +110,7 @@ class DataplaneTest {
 
         private DataFlowPrepareMessage createPrepareMessage() {
             return new DataFlowPrepareMessage("any", "any", "any", "any", "dataFlowId", "any", "any",
-                    controlPlane.baseUrl(), "Something-PUSH", emptyList(), emptyMap());
+                    URI.create(controlPlane.baseUrl()), "Something-PUSH", emptyList(), emptyMap());
         }
 
     }
@@ -123,7 +124,7 @@ class DataplaneTest {
 
             var dataplane = Dataplane.newInstance()
                     .id("dataplane-id")
-                    .endpoint("http://localhost/dataplane")
+                    .endpoint(URI.create("http://localhost/dataplane"))
                     .transferType("SupportedTransferType-PUSH")
                     .label("label-one").label("label-two")
                     .build();
@@ -147,7 +148,7 @@ class DataplaneTest {
 
             var dataplane = Dataplane.newInstance()
                     .id("dataplane-id")
-                    .endpoint("http://localhost/dataplane")
+                    .endpoint(URI.create("http://localhost/dataplane"))
                     .transferType("SupportedTransferType-PUSH")
                     .label("label-one").label("label-two")
                     .build();

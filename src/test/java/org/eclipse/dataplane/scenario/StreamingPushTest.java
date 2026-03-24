@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -74,7 +75,7 @@ public class StreamingPushTest {
         var processId = UUID.randomUUID().toString();
         var consumerProcessId = "consumer_" + processId;
         var prepareMessage = new DataFlowPrepareMessage("theMessageId", "theParticipantId", "theCounterPartyId",
-                "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", "theCallbackAddress",
+                "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", URI.create("http://callback"),
                 transferType, emptyList(), emptyMap());
 
         var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);

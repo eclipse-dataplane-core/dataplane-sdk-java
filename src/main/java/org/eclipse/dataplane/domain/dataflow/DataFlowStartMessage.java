@@ -16,6 +16,7 @@ package org.eclipse.dataplane.domain.dataflow;
 
 import org.eclipse.dataplane.domain.DataAddress;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +28,7 @@ public record DataFlowStartMessage(
         String processId,
         String agreementId,
         String datasetId,
-        String callbackAddress,
+        URI callbackAddress,
         String transferType,
         DataAddress dataAddress,
         List<String> labels,

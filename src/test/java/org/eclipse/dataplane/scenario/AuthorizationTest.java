@@ -28,6 +28,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
 import java.net.http.HttpRequest;
 import java.util.List;
 import java.util.UUID;
@@ -89,7 +90,7 @@ public class AuthorizationTest {
         assertThat(notifyPreparedResult.succeeded()).isTrue();
     }
 
-    private @NonNull DataFlowPrepareMessage createPrepareMessage(String consumerProcessId, String callbackAddress, String transferType) {
+    private @NonNull DataFlowPrepareMessage createPrepareMessage(String consumerProcessId, URI callbackAddress, String transferType) {
         return new DataFlowPrepareMessage("theMessageId", "theParticipantId", "theCounterPartyId",
                 "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", callbackAddress,
                 transferType, emptyList(), emptyMap());

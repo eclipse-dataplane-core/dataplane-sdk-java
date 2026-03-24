@@ -29,6 +29,7 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 
+import java.net.URI;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
@@ -87,12 +88,12 @@ public class ControlPlane {
         return providerClient.terminate(dataFlowId, terminateMessage);
     }
 
-    public String providerCallbackAddress() {
-        return "http://localhost:%d/provider/control-plane".formatted(httpServer.port());
+    public URI providerCallbackAddress() {
+        return URI.create("http://localhost:%d/provider/control-plane".formatted(httpServer.port()));
     }
 
-    public String consumerCallbackAddress() {
-        return "http://localhost:%d/consumer/control-plane".formatted(httpServer.port());
+    public URI consumerCallbackAddress() {
+        return URI.create("http://localhost:%d/consumer/control-plane".formatted(httpServer.port()));
     }
 
     @Deprecated(forRemoval = true)

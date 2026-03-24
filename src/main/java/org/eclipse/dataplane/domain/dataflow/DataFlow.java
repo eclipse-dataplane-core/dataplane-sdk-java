@@ -17,6 +17,7 @@ package org.eclipse.dataplane.domain.dataflow;
 
 import org.eclipse.dataplane.domain.DataAddress;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,7 +33,7 @@ public class DataFlow {
     private String participantId;
     private String counterPartyId;
     private String dataspaceContext;
-    private String callbackAddress;
+    private URI callbackAddress;
     private String suspensionReason;
     private String terminationReason;
     private List<String> labels;
@@ -55,7 +56,7 @@ public class DataFlow {
         return dataAddress;
     }
 
-    public String getCallbackAddress() {
+    public URI getCallbackAddress() {
         return callbackAddress;
     }
 
@@ -153,8 +154,8 @@ public class DataFlow {
         this.dataAddress = dataAddress;
     }
 
-    public String callbackEndpointFor(String action) {
-        return getCallbackAddress() + "/transfers/" + getId() + "/dataflow/" + action;
+    public URI callbackEndpointFor(String action) {
+        return URI.create(getCallbackAddress() + "/transfers/" + getId() + "/dataflow/" + action);
     }
 
     public static class Builder {
@@ -224,7 +225,7 @@ public class DataFlow {
             return this;
         }
 
-        public Builder callbackAddress(String callbackAddress) {
+        public Builder callbackAddress(URI callbackAddress) {
             dataFlow.callbackAddress = callbackAddress;
             return this;
         }
