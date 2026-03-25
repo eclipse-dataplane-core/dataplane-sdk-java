@@ -17,6 +17,7 @@ package org.eclipse.dataplane.scenario;
 import org.eclipse.dataplane.ControlPlane;
 import org.eclipse.dataplane.Dataplane;
 import org.eclipse.dataplane.HttpServer;
+import org.eclipse.dataplane.authorization.TestAuthorization;
 import org.eclipse.dataplane.domain.DataAddress;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
@@ -24,6 +25,7 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
+import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +35,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -42,6 +45,8 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.eclipse.dataplane.authorization.TestAuthorization.TOKEN_GENERATOR;
+import static org.eclipse.dataplane.authorization.TestAuthorization.createAuthorizationProfile;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.COMPLETED;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.PREPARED;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.PREPARING;
@@ -52,7 +57,10 @@ public class ProviderPushTest {
 
     private final HttpServer httpServer = new HttpServer();
 
-    private final ControlPlane controlPlane = new ControlPlane();
+    private final ControlPlane controlPlane = ControlPlane.newInstance()
+            .authorizationTokenGenerator(() -> TOKEN_GENERATOR.apply("control-plane-id"))
+            .build();
+
     private final ConsumerDataPlane consumerDataPlane = new ConsumerDataPlane();
     private final ProviderDataPlane providerDataPlane = new ProviderDataPlane();
 
@@ -157,9 +165,14 @@ public class ProviderPushTest {
 
         private final ExecutorService executor = Executors.newCachedThreadPool();
         private final Dataplane sdk = Dataplane.newInstance()
+                .registerAuthorization(new TestAuthorization())
                 .id("provider")
                 .onStart(this::onStart)
                 .build();
+
+        ProviderDataPlane() {
+            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), List.of(createAuthorizationProfile("provider"))));
+        }
 
         private Result<DataFlow> onStart(DataFlow dataFlow) {
             var dataAddress = dataFlow.getDataAddress();
@@ -192,11 +205,16 @@ public class ProviderPushTest {
     private static class ConsumerDataPlane {
 
         private final Dataplane sdk = Dataplane.newInstance()
-                .id("thisDataplaneId")
+                .id("consumer")
+                .registerAuthorization(new TestAuthorization())
                 .onPrepare(this::onPrepare)
                 .onCompleted(this::onCompleted)
                 .onTerminate(Result::success)
                 .build();
+
+        ConsumerDataPlane() {
+            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), List.of(createAuthorizationProfile("consumer"))));
+        }
 
         public void completePreparation(String dataFlowId) {
             sdk.getById(dataFlowId)

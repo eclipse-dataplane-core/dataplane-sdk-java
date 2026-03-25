@@ -17,6 +17,7 @@ package org.eclipse.dataplane.scenario;
 import org.eclipse.dataplane.ControlPlane;
 import org.eclipse.dataplane.Dataplane;
 import org.eclipse.dataplane.HttpServer;
+import org.eclipse.dataplane.authorization.TestAuthorization;
 import org.eclipse.dataplane.domain.DataAddress;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
@@ -25,6 +26,7 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
+import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,8 +34,10 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -41,6 +45,8 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.eclipse.dataplane.authorization.TestAuthorization.TOKEN_GENERATOR;
+import static org.eclipse.dataplane.authorization.TestAuthorization.createAuthorizationProfile;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.PREPARED;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.STARTED;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.STARTING;
@@ -50,7 +56,9 @@ class ConsumerPullTest {
     private final HttpServer httpServer = new HttpServer();
     private final int filesAvailableOnProvider = 13;
 
-    private final ControlPlane controlPlane = new ControlPlane();
+    private final ControlPlane controlPlane = ControlPlane.newInstance()
+            .authorizationTokenGenerator(() -> TOKEN_GENERATOR.apply("control-plane-id"))
+            .build();
     private final ConsumerDataPlane consumerDataPlane = new ConsumerDataPlane();
     private final ProviderDataPlane providerDataPlane = new ProviderDataPlane(filesAvailableOnProvider);
 
@@ -124,24 +132,25 @@ class ConsumerPullTest {
                 transferType, emptyList(), emptyMap());
     }
 
-
     private class ConsumerDataPlane {
 
         private final Path storage;
+        private final Dataplane sdk = Dataplane.newInstance()
+                .id("consumer")
+                .registerAuthorization(new TestAuthorization())
+                .onPrepare(Result::success)
+                .onStarted(this::onStarted)
+                .build();
+
 
         ConsumerDataPlane() {
+            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), List.of(createAuthorizationProfile("consumer"))));
             try {
                 storage = Files.createTempDirectory("consumer-storage");
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
-
-        private final Dataplane sdk = Dataplane.newInstance()
-                .id("consumer")
-                .onPrepare(Result::success)
-                .onStarted(this::onStarted)
-                .build();
 
         public Object controller() {
             return sdk.controller();
@@ -165,11 +174,13 @@ class ConsumerPullTest {
 
         private final Dataplane sdk = Dataplane.newInstance()
                 .id("provider")
+                .registerAuthorization(new TestAuthorization())
                 .onStart(this::onStart)
                 .build();
         private final int filesToBeCreated;
 
         ProviderDataPlane(int fileToBeCreated) {
+            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), List.of(createAuthorizationProfile("provider"))));
             this.filesToBeCreated = fileToBeCreated;
         }
 

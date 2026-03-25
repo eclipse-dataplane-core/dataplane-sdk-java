@@ -42,7 +42,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
-import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -58,10 +57,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class AuthorizationOauth2Test {
 
     private final HttpServer httpServer = new HttpServer();
-    private final ControlPlane controlPlane = new ControlPlane();
+    private final Oauth2ClientCredentialsAuthorization oauth2ClientCredentialsAuthorization = new Oauth2ClientCredentialsAuthorization();
+    private ControlPlane controlPlane;
     private final Dataplane dataPlane = Dataplane.newInstance()
             .id("data-plane")
-            .registerAuthorization(new Oauth2ClientCredentialsAuthorization())
+            .registerAuthorization(oauth2ClientCredentialsAuthorization)
             .onPrepare(dataFlow -> {
                 dataFlow.transitionToPreparing();
                 return Result.success(dataFlow);
@@ -74,6 +74,11 @@ public class AuthorizationOauth2Test {
     @BeforeEach
     void setUp() {
         httpServer.start();
+
+        controlPlane = ControlPlane.newInstance()
+                .authorizationTokenGenerator(() -> oauth2ClientCredentialsAuthorization.authorizationHeader(oauth2AuthorizationProfile()))
+                .build();
+
         controlPlane.initialize(httpServer, "/data-plane", "/data-plane");
 
         httpServer.deploy("/data-plane", dataPlane.controller());
@@ -90,15 +95,15 @@ public class AuthorizationOauth2Test {
         var controlplaneId = clientId;
 
         controlPlane.setAuthorizationValidation(requestContext -> requestContext
-                        .containsHeaderString("Authorization", authorization -> isValidBearerTokenWithSub(authorization, controlplaneId)));
+                        .containsHeaderString("Authorization", authorization -> {
+                            var callerIdExtraction = oauth2ClientCredentialsAuthorization.extractCallerId(authorization);
+                            return callerIdExtraction.succeeded() && Objects.equals(callerIdExtraction.getContent(), controlplaneId);
+                        }));
 
         var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(
                 controlplaneId,
                 controlPlane.consumerCallbackAddress(),
-                List.of(new AuthorizationProfile("oauth2_client_credentials")
-                        .withAttribute("tokenEndpoint", "http://localhost:" + httpServer.port() + "/oauth2/token")
-                        .withAttribute("clientId", clientId)
-                        .withAttribute("clientSecret", clientSecret))
+                List.of(oauth2AuthorizationProfile())
         );
         dataPlane.registerControlPlane(controlPlaneRegistrationMessage).orElseThrow(RuntimeException::new);
 
@@ -115,30 +120,22 @@ public class AuthorizationOauth2Test {
         assertThat(notifyPreparedResult.succeeded()).isTrue();
     }
 
-    private boolean isValidBearerTokenWithSub(String authorization, String controlplaneId) {
-        var bearer = "Bearer ";
-        var isBearer = authorization.startsWith(bearer);
-        if (!isBearer) {
-            return false;
-        }
-
-        try {
-            var jwt = SignedJWT.parse(authorization.substring(bearer.length()));
-            var sub = jwt.getJWTClaimsSet().getClaims().get("sub");
-            return sub.equals(controlplaneId);
-        } catch (ParseException e) {
-            return false;
-        }
-    }
-
     private @NonNull DataFlowPrepareMessage createPrepareMessage(String consumerProcessId, URI callbackAddress, String transferType) {
         return new DataFlowPrepareMessage("theMessageId", "theParticipantId", "theCounterPartyId",
                 "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", callbackAddress,
                 transferType, emptyList(), emptyMap());
     }
 
+    private AuthorizationProfile oauth2AuthorizationProfile() {
+        return new AuthorizationProfile("oauth2_client_credentials")
+                .withAttribute("tokenEndpoint", "http://localhost:" + httpServer.port() + "/oauth2/token")
+                .withAttribute("clientId", clientId)
+                .withAttribute("clientSecret", clientSecret);
+    }
+
     @Path("/")
     public static class Oauth2TokenController {
+
 
         private final String clientId;
         private final String clientSecret;

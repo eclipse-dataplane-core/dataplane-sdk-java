@@ -15,6 +15,8 @@
 package org.eclipse.dataplane.domain.registration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jwt.SignedJWT;
+import org.eclipse.dataplane.domain.Result;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -25,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 
 public class Oauth2ClientCredentialsAuthorization implements Authorization {
@@ -39,7 +40,7 @@ public class Oauth2ClientCredentialsAuthorization implements Authorization {
     }
 
     @Override
-    public HttpRequest.Builder apply(HttpRequest.Builder requestBuilder, AuthorizationProfile profile) {
+    public Result<String> authorizationHeader(AuthorizationProfile profile) {
         var tokenEndpoint = profile.stringAttribute("tokenEndpoint");
 
         var parameters = Map.of(
@@ -63,10 +64,25 @@ public class Oauth2ClientCredentialsAuthorization implements Authorization {
             var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             var body = response.body();
             var accessToken = objectMapper.readValue(body, Map.class).get("access_token").toString();
-            return requestBuilder.header(AUTHORIZATION, "Bearer " + accessToken);
+            return Result.success("Bearer " + accessToken);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            return Result.failure(e);
         }
 
+    }
+
+    @Override
+    public Result<String> extractCallerId(String authorizationHeader) {
+        try {
+            var token = authorizationHeader.substring("Bearer ".length());
+            var jwt = SignedJWT.parse(token);
+            var sub = jwt.getJWTClaimsSet().getClaims().get("sub");
+            if (sub instanceof String callerId) {
+                return Result.success(callerId);
+            }
+            return Result.failure(new RuntimeException("JWT sub claim %s is not a string".formatted(sub)));
+        } catch (Exception e) {
+            return Result.failure(e);
+        }
     }
 }
