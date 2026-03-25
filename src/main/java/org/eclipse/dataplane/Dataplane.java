@@ -10,6 +10,7 @@
  *  Contributors:
  *       Think-it GmbH - initial API and implementation
  *       Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V. - data flow properties
+ *       Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V. - introduce DataFlowStatusMessage
  *
  */
 
@@ -21,7 +22,7 @@ import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.controlplane.ControlPlane;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
-import org.eclipse.dataplane.domain.dataflow.DataFlowResponseMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
@@ -114,7 +115,7 @@ public class Dataplane {
         return Result.failure(new ControlPlaneNotRegistered(controlplaneId));
     }
 
-    public Result<DataFlowResponseMessage> prepare(String controlplaneId, DataFlowPrepareMessage message) {
+    public Result<DataFlowStatusMessage> prepare(String controlplaneId, DataFlowPrepareMessage message) {
         var initialDataFlow = DataFlow.newInstance()
                 .id(message.processId())
                 .state(DataFlow.State.INITIATING)
@@ -137,11 +138,11 @@ public class Dataplane {
                         dataFlow.transitionToPrepared();
                     }
 
-                    DataFlowResponseMessage response;
+                    DataFlowStatusMessage response;
                     if (dataFlow.isPrepared() && dataFlow.isPush()) {
-                        response = new DataFlowResponseMessage(id, dataFlow.getDataAddress(), initialDataFlow.getState().name(), null);
+                        response = new DataFlowStatusMessage(id, dataFlow.getId(), initialDataFlow.getState().name(), dataFlow.getDataAddress(), null);
                     } else {
-                        response = new DataFlowResponseMessage(id, null, initialDataFlow.getState().name(), null);
+                        response = new DataFlowStatusMessage(id, dataFlow.getId(), initialDataFlow.getState().name(), null, null);
                     }
 
                     return save(dataFlow).map(it -> response);
@@ -149,7 +150,7 @@ public class Dataplane {
     }
 
 
-    public Result<DataFlowResponseMessage> start(String controlplaneId, DataFlowStartMessage message) {
+    public Result<DataFlowStatusMessage> start(String controlplaneId, DataFlowStartMessage message) {
         var initialDataFlow = DataFlow.newInstance()
                 .id(message.processId())
                 .state(DataFlow.State.INITIATING)
@@ -171,11 +172,11 @@ public class Dataplane {
                         dataFlow.transitionToStarted();
                     }
 
-                    DataFlowResponseMessage response;
+                    DataFlowStatusMessage response;
                     if (dataFlow.isStarted() && dataFlow.isPull()) {
-                        response = new DataFlowResponseMessage(id, dataFlow.getDataAddress(), dataFlow.getState().name(), null);
+                        response = new DataFlowStatusMessage(id, dataFlow.getId(), dataFlow.getState().name(), dataFlow.getDataAddress(), null);
                     } else {
-                        response = new DataFlowResponseMessage(id, null, dataFlow.getState().name(), null);
+                        response = new DataFlowStatusMessage(id, dataFlow.getId(), dataFlow.getState().name(), null, null);
                     }
                     return save(dataFlow).map(it -> response);
                 });
@@ -213,7 +214,7 @@ public class Dataplane {
                 .compose(onPrepare::action)
                 .compose(dataFlow -> {
                     dataFlow.transitionToPrepared();
-                    var message = new DataFlowResponseMessage(id, dataFlow.getDataAddress(), dataFlow.getState().name(), null);
+                    var message = new DataFlowStatusMessage(id, dataFlowId, dataFlow.getState().name(), dataFlow.getDataAddress(),null);
 
                     return notifyControlPlane("prepared", dataFlow, message);
 
@@ -231,7 +232,7 @@ public class Dataplane {
                 .compose(dataFlow -> {
                     dataFlow.transitionToStarted();
 
-                    var message = new DataFlowResponseMessage(id, dataFlow.getDataAddress(), dataFlow.getState().name(), null);
+                    var message = new DataFlowStatusMessage(id, dataFlowId, dataFlow.getState().name(), dataFlow.getDataAddress(), null);
 
                     return notifyControlPlane("started", dataFlow, message);
 
@@ -263,7 +264,9 @@ public class Dataplane {
                 .compose(dataFlow -> {
                     dataFlow.transitionToTerminated(throwable.getMessage());
 
-                    return notifyControlPlane("errored", dataFlow, emptyMap()); // TODO DataFlowErroredMessage not defined
+                    var message = new DataFlowStatusMessage(id, dataFlowId, dataFlow.getState().name(), null, throwable.getMessage());
+
+                    return notifyControlPlane("errored", dataFlow, message);
                 });
     }
 

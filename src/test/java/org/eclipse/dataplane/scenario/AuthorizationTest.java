@@ -20,7 +20,7 @@ import org.eclipse.dataplane.HttpServer;
 import org.eclipse.dataplane.authorization.TestAuthorization;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
-import org.eclipse.dataplane.domain.dataflow.DataFlowResponseMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
 import org.eclipse.dataplane.port.exception.DataFlowNotifyControlPlaneFailed;
 import org.jspecify.annotations.NonNull;
@@ -81,7 +81,7 @@ public class AuthorizationTest {
         var consumerProcessId = "consumer_" + UUID.randomUUID();
         var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), "FileSystemAsync-PUSH");
 
-        controlPlane.consumerPrepare(prepareMessage).statusCode(202).extract().as(DataFlowResponseMessage.class);
+        controlPlane.consumerPrepare(prepareMessage).statusCode(202).extract().as(DataFlowStatusMessage.class);
 
         var notifyPreparedResult = dataPlane.getById(consumerProcessId)
                 .compose(dataFlow -> dataPlane.notifyPrepared(consumerProcessId, Result::success));

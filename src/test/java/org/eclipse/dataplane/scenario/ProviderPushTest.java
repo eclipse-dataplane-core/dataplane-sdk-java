@@ -22,7 +22,7 @@ import org.eclipse.dataplane.domain.DataAddress;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
-import org.eclipse.dataplane.domain.dataflow.DataFlowResponseMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
@@ -85,14 +85,14 @@ public class ProviderPushTest {
         var consumerProcessId = "consumer_" + processId;
         var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
 
-        var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
+        var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());
         assertThat(prepareResponse.dataAddress()).isNotNull();
         var destinationDataAddress = prepareResponse.dataAddress();
 
         var providerProcessId = "provider_" + processId;
         var startMessage = createStartMessage(providerProcessId, controlPlane.providerCallbackAddress(), transferType, destinationDataAddress);
-        var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
+        var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
 
         assertThat(startResponse.state()).isEqualTo(STARTED.name());
         assertThat(startResponse.dataAddress()).isNull();
@@ -116,12 +116,12 @@ public class ProviderPushTest {
         var consumerProcessId = "consumer_" + processId;
         var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
 
-        controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
+        controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         var invalidDataAddress = new DataAddress("FileSystem", "", emptyList());
 
         var providerProcessId = "provider_" + processId;
         var startMessage = createStartMessage(providerProcessId, controlPlane.providerCallbackAddress(), transferType, invalidDataAddress);
-        controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
+        controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
 
         await().untilAsserted(() -> {
             var providerStatus = controlPlane.providerStatus(providerProcessId).statusCode(200).extract().as(DataFlowStatusResponseMessage.class);
@@ -139,7 +139,7 @@ public class ProviderPushTest {
         var consumerProcessId = "consumer_" + processId;
         var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
 
-        var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(202).extract().as(DataFlowResponseMessage.class);
+        var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(202).extract().as(DataFlowStatusMessage.class);
         assertThat(prepareResponse.state()).isEqualTo(PREPARING.name());
         assertThat(prepareResponse.dataAddress()).isNull();
 

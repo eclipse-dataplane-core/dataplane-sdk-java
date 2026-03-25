@@ -32,7 +32,7 @@ import org.eclipse.dataplane.Dataplane;
 import org.eclipse.dataplane.HttpServer;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
-import org.eclipse.dataplane.domain.dataflow.DataFlowResponseMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
 import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
 import org.eclipse.dataplane.domain.registration.Oauth2ClientCredentialsAuthorization;
@@ -112,7 +112,7 @@ public class AuthorizationOauth2Test {
         var consumerProcessId = "consumer_" + processId;
         var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
 
-        controlPlane.consumerPrepare(prepareMessage).statusCode(202).extract().as(DataFlowResponseMessage.class);
+        controlPlane.consumerPrepare(prepareMessage).statusCode(202).extract().as(DataFlowStatusMessage.class);
 
         var notifyPreparedResult = dataPlane.getById(consumerProcessId)
                 .compose(dataFlow -> dataPlane.notifyPrepared(consumerProcessId, Result::success));
