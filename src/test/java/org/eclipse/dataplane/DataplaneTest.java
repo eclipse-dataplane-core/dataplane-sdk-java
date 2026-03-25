@@ -132,7 +132,8 @@ class DataplaneTest {
         void shouldSendDataFlowStatusMessage_whenDataFlowIsErrored() {
             controlPlane.stubFor(post(anyUrl()).willReturn(aResponse().withStatus(200)));
             var dataplane = Dataplane.newInstance().id("dataplane-id").onPrepare(Result::success).build();
-            dataplane.prepare(createPrepareMessage());
+            dataplane.registerControlPlane(new ControlPlaneRegistrationMessage("controlplaneId", URI.create("http://localhost/any")));
+            dataplane.prepare("controlplaneId", createPrepareMessage());
 
             var result = dataplane.notifyErrored("dataFlowId", new RuntimeException("some-error"));
 

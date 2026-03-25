@@ -120,7 +120,7 @@ public class AuthorizationTest {
         var consumerProcessId = "consumer_" + UUID.randomUUID();
         var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), "FileSystemAsync-PUSH");
 
-        controlPlane.consumerPrepare(prepareMessage).statusCode(202).extract().as(DataFlowResponseMessage.class);
+        controlPlane.consumerPrepare(prepareMessage).statusCode(202).extract().as(DataFlowStatusMessage.class);
 
         var notifyPreparedResult = dataPlane.getById(consumerProcessId)
                 .compose(dataFlow -> dataPlane.notifyPrepared(consumerProcessId, Result::success));
