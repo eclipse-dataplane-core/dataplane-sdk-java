@@ -24,9 +24,9 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
-import org.eclipse.dataplane.domain.dataflow.DataFlowResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 
@@ -122,7 +122,7 @@ public class ControlPlane {
         @POST
         @Path("/{transferId}/dataflow/prepared")
         @Consumes(WILDCARD)
-        public void prepared(@PathParam("transferId") String transferId, @Context ContainerRequestContext context, DataFlowResponseMessage message) {
+        public void prepared(@PathParam("transferId") String transferId, @Context ContainerRequestContext context, DataFlowStatusMessage message) {
             if (!authorizationValidation.test(context)) {
                 throw new NotAuthorizedException("Not authorized");
             }
@@ -132,7 +132,7 @@ public class ControlPlane {
         @POST
         @Path("/{transferId}/dataflow/started")
         @Consumes(WILDCARD)
-        public void started(@PathParam("transferId") String transferId, @Context ContainerRequestContext context, DataFlowResponseMessage message) {
+        public void started(@PathParam("transferId") String transferId, @Context ContainerRequestContext context, DataFlowStatusMessage message) {
             if (!authorizationValidation.test(context)) {
                 throw new NotAuthorizedException("Not authorized");
             }

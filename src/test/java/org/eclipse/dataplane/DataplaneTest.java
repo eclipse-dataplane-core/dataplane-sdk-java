@@ -9,6 +9,7 @@
  *
  *  Contributors:
  *       Think-it GmbH - initial API and implementation
+ *       Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V. - introduce DataFlowStatusMessage
  *
  */
 
@@ -30,6 +31,7 @@ import java.net.ConnectException;
 import java.net.URI;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.and;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
@@ -43,6 +45,7 @@ import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.COMPLETED;
+import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.TERMINATED;
 
 class DataplaneTest {
 
@@ -111,12 +114,42 @@ class DataplaneTest {
             assertThat(result.succeeded()).isTrue();
             assertThat(dataplane.status("dataFlowId").getContent().state()).isEqualTo(COMPLETED.name());
         }
+    }
 
-        private DataFlowPrepareMessage createPrepareMessage() {
-            return new DataFlowPrepareMessage("any", "any", "any", "any", "dataFlowId", "any", "any",
-                    URI.create(controlPlane.baseUrl()), "Something-PUSH", emptyList(), emptyMap());
+    @Nested
+    class NotifyErrored {
+        @Test
+        void shouldFail_whenDataFlowDoesNotExist() {
+            var dataplane = Dataplane.newInstance().build();
+
+            var result = dataplane.notifyErrored("dataFlowId", new RuntimeException("some-error"));
+
+            assertThat(result.failed()).isTrue();
+            assertThatThrownBy(result::orElseThrow).isExactlyInstanceOf(ResourceNotFoundException.class);
         }
 
+        @Test
+        void shouldSendDataFlowStatusMessage_whenDataFlowIsErrored() {
+            controlPlane.stubFor(post(anyUrl()).willReturn(aResponse().withStatus(200)));
+            var dataplane = Dataplane.newInstance().id("dataplane-id").onPrepare(Result::success).build();
+            dataplane.registerControlPlane(new ControlPlaneRegistrationMessage("controlplaneId", URI.create("http://localhost/any")));
+            dataplane.prepare("controlplaneId", createPrepareMessage());
+
+            var result = dataplane.notifyErrored("dataFlowId", new RuntimeException("some-error"));
+
+            assertThat(result.succeeded()).isTrue();
+            assertThat(dataplane.status("dataFlowId").getContent().state()).isEqualTo(TERMINATED.name());
+
+            controlPlane.verify(postRequestedFor(urlPathEqualTo("/transfers/dataFlowId/dataflow/errored"))
+                    .withRequestBody(and(
+                            matchingJsonPath("dataplaneId", equalTo("dataplane-id")),
+                            matchingJsonPath("dataFlowId", equalTo("dataFlowId")),
+                            matchingJsonPath("state", equalTo("TERMINATED")),
+                            matchingJsonPath("dataAddress", absent()),
+                            matchingJsonPath("error", equalTo("some-error"))
+                    ))
+            );
+        }
     }
 
     @Nested
@@ -164,4 +197,8 @@ class DataplaneTest {
         }
     }
 
+    private DataFlowPrepareMessage createPrepareMessage() {
+        return new DataFlowPrepareMessage("any", "any", "any", "any", "dataFlowId", "any", "any",
+                URI.create(controlPlane.baseUrl()), "Something-PUSH", emptyList(), emptyMap());
+    }
 }

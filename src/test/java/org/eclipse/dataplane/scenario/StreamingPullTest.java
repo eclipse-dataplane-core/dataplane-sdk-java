@@ -22,9 +22,9 @@ import org.eclipse.dataplane.domain.DataAddress;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
-import org.eclipse.dataplane.domain.dataflow.DataFlowResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
@@ -87,13 +87,13 @@ class StreamingPullTest {
         var consumerProcessId = "consumer_" + processId;
         var prepareMessage = prepareMessage(consumerProcessId, transferType);
 
-        var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
+        var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());
         assertThat(prepareResponse.dataAddress()).isNull();
 
         var providerProcessId = "provider_" + processId;
         var startMessage = startMessage(providerProcessId, transferType);
-        var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
+        var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(startResponse.state()).isEqualTo(STARTED.name());
         assertThat(startResponse.dataAddress()).isNotNull();
 
@@ -115,13 +115,13 @@ class StreamingPullTest {
         var consumerProcessId = "consumer_" + processId;
         var prepareMessage = prepareMessage(consumerProcessId, transferType);
 
-        var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
+        var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());
         assertThat(prepareResponse.dataAddress()).isNull();
 
         var providerProcessId = "provider_" + processId;
         var startMessage = startMessage(providerProcessId, transferType);
-        var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
+        var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(startResponse.state()).isEqualTo(STARTED.name());
         assertThat(startResponse.dataAddress()).isNotNull();
 
@@ -133,7 +133,7 @@ class StreamingPullTest {
 
         consumerDataPlane.assertNoMoreDataIsTransferred();
 
-        var resumeResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowResponseMessage.class);
+        var resumeResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         controlPlane.consumerStarted(consumerProcessId, new DataFlowStartedNotificationMessage(resumeResponse.dataAddress())).statusCode(200);
 
         consumerDataPlane.assertDataIsFlowing();

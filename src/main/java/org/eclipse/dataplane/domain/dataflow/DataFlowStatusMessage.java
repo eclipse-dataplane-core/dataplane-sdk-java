@@ -9,6 +9,7 @@
  *
  *  Contributors:
  *       Think-it GmbH - initial API and implementation
+ *       Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V. - introduce DataFlowStatusMessage
  *
  */
 
@@ -16,10 +17,11 @@ package org.eclipse.dataplane.domain.dataflow;
 
 import org.eclipse.dataplane.domain.DataAddress;
 
-public record DataFlowResponseMessage(
+public record DataFlowStatusMessage(
         String dataplaneId,
-        DataAddress dataAddress,
+        String dataFlowId,
         String state,
+        DataAddress dataAddress,
         String error
 ) {
 }

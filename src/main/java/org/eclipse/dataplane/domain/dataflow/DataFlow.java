@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-// TODO: could it store the messages?
 public class DataFlow {
 
     private String id;
