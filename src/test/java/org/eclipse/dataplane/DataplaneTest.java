@@ -17,6 +17,7 @@ package org.eclipse.dataplane;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
+import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
 import org.eclipse.dataplane.port.exception.DataFlowNotifyControlPlaneFailed;
 import org.eclipse.dataplane.port.exception.DataplaneNotRegistered;
 import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
@@ -73,7 +74,8 @@ class DataplaneTest {
         @Test
         void shouldReturnFailedFuture_whenControlPlaneIsNotAvailable() {
             var dataplane = Dataplane.newInstance().onPrepare(Result::success).build();
-            dataplane.prepare(createPrepareMessage());
+            dataplane.registerControlPlane(new ControlPlaneRegistrationMessage("controlplaneId", URI.create("http://localhost/any")));
+            dataplane.prepare("controlplaneId", createPrepareMessage());
             controlPlane.stop();
 
             var result = dataplane.notifyCompleted("dataFlowId");
@@ -87,7 +89,8 @@ class DataplaneTest {
             controlPlane.stubFor(post(anyUrl()).willReturn(aResponse().withStatus(500)));
 
             var dataplane = Dataplane.newInstance().onPrepare(Result::success).build();
-            dataplane.prepare(createPrepareMessage());
+            dataplane.registerControlPlane(new ControlPlaneRegistrationMessage("controlplaneId", URI.create("http://localhost/any")));
+            dataplane.prepare("controlplaneId", createPrepareMessage());
 
             var result = dataplane.notifyCompleted("dataFlowId");
 
@@ -100,7 +103,8 @@ class DataplaneTest {
         void shouldTransitionToCompleted_whenControlPlaneRespondCorrectly() {
             controlPlane.stubFor(post(anyUrl()).willReturn(aResponse().withStatus(200)));
             var dataplane = Dataplane.newInstance().onPrepare(Result::success).build();
-            dataplane.prepare(createPrepareMessage());
+            dataplane.registerControlPlane(new ControlPlaneRegistrationMessage("controlplaneId", URI.create("http://localhost/any")));
+            dataplane.prepare("controlplaneId", createPrepareMessage());
 
             var result = dataplane.notifyCompleted("dataFlowId");
 

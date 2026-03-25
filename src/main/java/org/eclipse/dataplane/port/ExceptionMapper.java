@@ -15,9 +15,11 @@
 package org.eclipse.dataplane.port;
 
 import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 import org.eclipse.dataplane.port.exception.AuthorizationNotSupported;
+import org.eclipse.dataplane.port.exception.ControlPlaneNotRegistered;
 import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
 
 import java.util.function.Function;
@@ -25,12 +27,20 @@ import java.util.function.Function;
 public interface ExceptionMapper {
 
     Function<Exception, WebApplicationException> MAP_TO_WSRS = exception -> {
+        if (exception instanceof WebApplicationException webApplicationException) {
+            return webApplicationException;
+        }
+
         if (exception instanceof ResourceNotFoundException notFound) {
             return new NotFoundException(notFound);
         }
 
-        if (exception instanceof AuthorizationNotSupported authorizationNotSupported) {
-            return new BadRequestException(authorizationNotSupported);
+        if (exception instanceof ControlPlaneNotRegistered controlPlaneNotRegistered) {
+            return new NotAuthorizedException(controlPlaneNotRegistered);
+        }
+
+        if (exception instanceof AuthorizationNotSupported) {
+            return new BadRequestException(exception);
         }
 
         return new WebApplicationException("unexpected internal server error");

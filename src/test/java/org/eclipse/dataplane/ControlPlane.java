@@ -22,6 +22,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
+import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
@@ -33,6 +34,7 @@ import java.net.URI;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static jakarta.ws.rs.core.MediaType.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,11 +50,16 @@ public class ControlPlane {
     private DataplaneClient providerClient;
     private HttpServer httpServer;
     private Predicate<ContainerRequestContext> authorizationValidation = c -> true;
+    private Supplier<Result<String>> authorizationTokenGenerator;
+
+    public static Builder newInstance() {
+        return new Builder();
+    }
 
     public void initialize(HttpServer httpServer, String consumerDataPlanePath, String providerDataPlanePath) {
         this.httpServer = httpServer;
-        consumerClient = new DataplaneClient("http://localhost:%d%s".formatted(httpServer.port(), consumerDataPlanePath));
-        providerClient = new DataplaneClient("http://localhost:%d%s".formatted(httpServer.port(), providerDataPlanePath));
+        consumerClient = new DataplaneClient("http://localhost:%d%s".formatted(httpServer.port(), consumerDataPlanePath), authorizationTokenGenerator);
+        providerClient = new DataplaneClient("http://localhost:%d%s".formatted(httpServer.port(), providerDataPlanePath), authorizationTokenGenerator);
 
         Predicate<ContainerRequestContext> authorizationProvider = context -> authorizationValidation.test(context);
 
@@ -94,11 +101,6 @@ public class ControlPlane {
 
     public URI consumerCallbackAddress() {
         return URI.create("http://localhost:%d/consumer/control-plane".formatted(httpServer.port()));
-    }
-
-    @Deprecated(forRemoval = true)
-    public void setAuthorizationToken(String token) {
-
     }
 
     public void setAuthorizationValidation(Predicate<ContainerRequestContext> authorizationValidation) {
@@ -163,6 +165,24 @@ public class ControlPlane {
             });
         }
 
+    }
+
+    public static class Builder {
+
+        private final ControlPlane instance = new ControlPlane();
+
+        private Builder() {
+
+        }
+
+        public ControlPlane build() {
+            return instance;
+        }
+
+        public Builder authorizationTokenGenerator(Supplier<Result<String>> authorizationTokenGenerator) {
+            instance.authorizationTokenGenerator = authorizationTokenGenerator;
+            return this;
+        }
     }
 
 }

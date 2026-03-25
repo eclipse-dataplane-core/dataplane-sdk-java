@@ -17,7 +17,7 @@ package org.eclipse.dataplane.api;
 import io.restassured.http.ContentType;
 import org.eclipse.dataplane.Dataplane;
 import org.eclipse.dataplane.HttpServer;
-import org.eclipse.dataplane.domain.registration.Authorization;
+import org.eclipse.dataplane.authorization.TestAuthorization;
 import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
 import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
-import java.net.http.HttpRequest;
 import java.util.List;
 import java.util.UUID;
 
@@ -192,19 +191,6 @@ class ControlPlaneRegistrationApiTest {
                     .then()
                     .log().ifValidationFails()
                     .statusCode(404);
-        }
-    }
-
-    private static class TestAuthorization implements Authorization {
-
-        @Override
-        public String type() {
-            return "token";
-        }
-
-        @Override
-        public HttpRequest.Builder apply(HttpRequest.Builder requestBuilder, AuthorizationProfile profile) {
-            return requestBuilder.header("Authorization", profile.stringAttribute("token"));
         }
     }
 

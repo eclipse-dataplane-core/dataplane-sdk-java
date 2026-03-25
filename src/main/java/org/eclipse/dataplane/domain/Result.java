@@ -15,6 +15,7 @@
 package org.eclipse.dataplane.domain;
 
 import java.util.NoSuchElementException;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public abstract class Result<C> {
@@ -51,6 +52,10 @@ public abstract class Result<C> {
     public abstract <T> Result<T> map(ExceptionThrowingFunction<C, T> transformValue);
 
     public abstract <T> Result<T> compose(ExceptionThrowingFunction<C, Result<T>> transformValue);
+
+    public abstract Result<C> onSuccess(Consumer<C> onSuccessDo);
+
+    public abstract Result<C> onFailure(Consumer<Exception> onFailureDo);
 
     public boolean succeeded() {
         return this instanceof Result.Success<C>;
@@ -101,6 +106,17 @@ public abstract class Result<C> {
                 return Result.failure(e);
             }
         }
+
+        @Override
+        public Result<C> onSuccess(Consumer<C> onSuccessDo) {
+            onSuccessDo.accept(content);
+            return this;
+        }
+
+        @Override
+        public Result<C> onFailure(Consumer<Exception> onFailureDo) {
+            return this;
+        }
     }
 
     private static class Failure<C> extends Result<C> {
@@ -140,6 +156,17 @@ public abstract class Result<C> {
         public <T> Result<T> compose(ExceptionThrowingFunction<C, Result<T>> transformValue) {
             return Result.failure(this.exception);
         }
+
+        @Override
+        public Result<C> onSuccess(Consumer<C> onSuccessDo) {
+            return this;
+        }
+
+        @Override
+        public Result<C> onFailure(Consumer<Exception> onFailureDo) {
+            onFailureDo.accept(exception);
+            return this;
+        }
     }
 
     @FunctionalInterface
@@ -151,4 +178,5 @@ public abstract class Result<C> {
     public interface ExceptionThrowingSupplier<T> {
         T get() throws Exception;
     }
+
 }

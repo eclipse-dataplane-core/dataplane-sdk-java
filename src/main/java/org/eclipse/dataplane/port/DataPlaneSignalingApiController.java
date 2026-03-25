@@ -16,12 +16,16 @@ package org.eclipse.dataplane.port;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.dataplane.Dataplane;
+import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
@@ -29,6 +33,9 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
+import org.eclipse.dataplane.domain.registration.Authorization;
+
+import java.util.Map;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.MediaType.WILDCARD;
@@ -39,15 +46,20 @@ import static jakarta.ws.rs.core.MediaType.WILDCARD;
 public class DataPlaneSignalingApiController {
 
     private final Dataplane dataplane;
+    private final Map<String, Authorization> authorizations;
 
-    public DataPlaneSignalingApiController(Dataplane dataplane) {
+    public DataPlaneSignalingApiController(Dataplane dataplane, Map<String, Authorization> authorizations) {
         this.dataplane = dataplane;
+        this.authorizations = authorizations;
     }
 
     @POST
     @Path("/prepare")
-    public Response prepare(DataFlowPrepareMessage message) {
-        var response = dataplane.prepare(message).orElseThrow(ExceptionMapper.MAP_TO_WSRS);
+    public Response prepare(DataFlowPrepareMessage message, @Context ContainerRequestContext requestContext) {
+        var response = extractControlplaneId(requestContext)
+                .compose(controlplaneId -> dataplane.prepare(controlplaneId, message))
+                .orElseThrow(ExceptionMapper.MAP_TO_WSRS);
+
         if (response.state().equals(DataFlow.State.PREPARING.name())) {
             return Response.accepted(response).build();
         }
@@ -56,8 +68,11 @@ public class DataPlaneSignalingApiController {
 
     @POST
     @Path("/start")
-    public Response start(DataFlowStartMessage message) {
-        var response = dataplane.start(message).orElseThrow(ExceptionMapper.MAP_TO_WSRS);
+    public Response start(DataFlowStartMessage message, @Context ContainerRequestContext requestContext) {
+        var response = extractControlplaneId(requestContext)
+                .compose(controlplaneId -> dataplane.start(controlplaneId, message))
+                .orElseThrow(ExceptionMapper.MAP_TO_WSRS);
+
         if (response.state().equals(DataFlow.State.STARTING.name())) {
             return Response.accepted(response).build();
         }
@@ -97,6 +112,17 @@ public class DataPlaneSignalingApiController {
     @Path("/{flowId}/status")
     public DataFlowStatusResponseMessage status(@PathParam("flowId") String flowId) {
         return dataplane.status(flowId).orElseThrow(ExceptionMapper.MAP_TO_WSRS);
+    }
+
+    private Result<String> extractControlplaneId(ContainerRequestContext requestContext) {
+        var authorizationHeader = requestContext.getHeaderString("Authorization");
+        if (authorizationHeader == null) {
+            return Result.failure(new NotAuthorizedException("Authorization header missing"));
+        }
+        return authorizations.values().stream()
+                .map(authorization -> authorization.extractCallerId(authorizationHeader))
+                .filter(Result::succeeded).findFirst()
+                .orElseGet(() -> Result.failure(new NotAuthorizedException("Authorization method not recognized")));
     }
 
 }

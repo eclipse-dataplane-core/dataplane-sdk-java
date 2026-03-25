@@ -14,7 +14,7 @@
 
 package org.eclipse.dataplane.domain.registration;
 
-import java.net.http.HttpRequest;
+import org.eclipse.dataplane.domain.Result;
 
 /**
  * Defines structure for an authorization profile.
@@ -30,6 +30,7 @@ public interface Authorization {
      * Function that applies the authorization profile to the request builder.
      * e.g. the Authorization header could be added with proper content.
      */
-    HttpRequest.Builder apply(HttpRequest.Builder requestBuilder, AuthorizationProfile profile);
+    Result<String> authorizationHeader(AuthorizationProfile profile);
 
+    Result<String> extractCallerId(String authorizationHeader);
 }

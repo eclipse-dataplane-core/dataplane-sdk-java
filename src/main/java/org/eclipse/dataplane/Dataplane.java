@@ -39,8 +39,10 @@ import org.eclipse.dataplane.logic.OnTerminate;
 import org.eclipse.dataplane.port.DataPlaneRegistrationApiController;
 import org.eclipse.dataplane.port.DataPlaneSignalingApiController;
 import org.eclipse.dataplane.port.exception.AuthorizationNotSupported;
+import org.eclipse.dataplane.port.exception.ControlPlaneNotRegistered;
 import org.eclipse.dataplane.port.exception.DataFlowNotifyControlPlaneFailed;
 import org.eclipse.dataplane.port.exception.DataplaneNotRegistered;
+import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
 import org.eclipse.dataplane.port.store.ControlPlaneStore;
 import org.eclipse.dataplane.port.store.DataFlowStore;
 import org.eclipse.dataplane.port.store.InMemoryControlPlaneStore;
@@ -57,6 +59,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static java.util.Collections.emptyMap;
 
 public class Dataplane {
@@ -84,7 +87,7 @@ public class Dataplane {
     }
 
     public DataPlaneSignalingApiController controller() {
-        return new DataPlaneSignalingApiController(this);
+        return new DataPlaneSignalingApiController(this, authorizations);
     }
 
     public DataPlaneRegistrationApiController registrationController() {
@@ -104,7 +107,14 @@ public class Dataplane {
                 .map(f -> new DataFlowStatusResponseMessage(f.getId(), f.getState().name()));
     }
 
-    public Result<DataFlowResponseMessage> prepare(DataFlowPrepareMessage message) {
+    private Result<Void> checkControlPlane(String controlplaneId) {
+        if (controlPlaneStore.exists(controlplaneId)) {
+            return Result.success();
+        }
+        return Result.failure(new ControlPlaneNotRegistered(controlplaneId));
+    }
+
+    public Result<DataFlowResponseMessage> prepare(String controlplaneId, DataFlowPrepareMessage message) {
         var initialDataFlow = DataFlow.newInstance()
                 .id(message.processId())
                 .state(DataFlow.State.INITIATING)
@@ -117,9 +127,11 @@ public class Dataplane {
                 .participantId(message.participantId())
                 .counterPartyId(message.counterPartyId())
                 .dataspaceContext(message.dataspaceContext())
+                .controlplaneId(controlplaneId)
                 .build();
 
-        return onPrepare.action(initialDataFlow)
+        return checkControlPlane(controlplaneId)
+                .compose(v -> onPrepare.action(initialDataFlow))
                 .compose(dataFlow -> {
                     if (dataFlow.isInitiating()) {
                         dataFlow.transitionToPrepared();
@@ -137,7 +149,7 @@ public class Dataplane {
     }
 
 
-    public Result<DataFlowResponseMessage> start(DataFlowStartMessage message) {
+    public Result<DataFlowResponseMessage> start(String controlplaneId, DataFlowStartMessage message) {
         var initialDataFlow = DataFlow.newInstance()
                 .id(message.processId())
                 .state(DataFlow.State.INITIATING)
@@ -149,9 +161,11 @@ public class Dataplane {
                 .participantId(message.participantId())
                 .counterPartyId(message.counterPartyId())
                 .dataspaceContext(message.dataspaceContext())
+                .controlplaneId(controlplaneId)
                 .build();
 
-        return onStart.action(initialDataFlow)
+        return checkControlPlane(controlplaneId)
+                .compose(v -> onStart.action(initialDataFlow))
                 .compose(dataFlow -> {
                     if (dataFlow.isInitiating()) {
                         dataFlow.transitionToStarted();
@@ -310,14 +324,16 @@ public class Dataplane {
                             .header("content-type", "application/json")
                             .POST(HttpRequest.BodyPublishers.ofString(body));
 
-                    var controlPlane = controlPlaneStore.findByEndpoint(dataFlow.getCallbackAddress());
-                    if (controlPlane.succeeded()) {
-                        var authorizationProfile = controlPlane.getContent().authorization();
-                        if (authorizationProfile != null) {
-                            var authorization = authorizations.get(authorizationProfile.getType());
-                            authorization.apply(requestBuilder, authorizationProfile);
-                        }
-                    }
+                    controlPlaneStore.findById(dataFlow.getControlplaneId())
+                            .compose(controlPlane -> {
+                                var authorizationProfile = controlPlane.authorization();
+                                if (authorizationProfile != null) {
+                                    var authorization = authorizations.get(authorizationProfile.getType());
+                                    return authorization.authorizationHeader(authorizationProfile);
+                                }
+                                return Result.failure(new ResourceNotFoundException("ControlPlane has no authorization"));
+                            })
+                            .onSuccess(authorizationHeader -> requestBuilder.header(AUTHORIZATION, authorizationHeader));
 
                     return httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.discarding());
                 })

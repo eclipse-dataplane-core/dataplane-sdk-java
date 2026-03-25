@@ -39,6 +39,7 @@ public class DataFlow {
     private List<String> labels;
     private Map<String, Object> metadata;
     private DataAddress dataAddress;
+    private String controlplaneId;
 
     public static DataFlow.Builder newInstance() {
         return new Builder();
@@ -158,6 +159,10 @@ public class DataFlow {
         return URI.create(getCallbackAddress() + "/transfers/" + getId() + "/dataflow/" + action);
     }
 
+    public String getControlplaneId() {
+        return controlplaneId;
+    }
+
     public static class Builder {
         private final DataFlow dataFlow = new DataFlow();
 
@@ -232,6 +237,11 @@ public class DataFlow {
 
         public Builder metadata(Map<String, Object> metadata) {
             dataFlow.metadata = metadata;
+            return this;
+        }
+
+        public Builder controlplaneId(String controlplaneId) {
+            dataFlow.controlplaneId = controlplaneId;
             return this;
         }
     }
