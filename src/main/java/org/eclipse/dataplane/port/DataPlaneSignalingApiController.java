@@ -9,6 +9,7 @@
  *
  *  Contributors:
  *       Think-it GmbH - initial API and implementation
+ *       Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V. - resume endpoint
  *
  */
 
@@ -28,6 +29,7 @@ import org.eclipse.dataplane.Dataplane;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowResumeMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
@@ -84,6 +86,14 @@ public class DataPlaneSignalingApiController {
     public Response suspend(@PathParam("flowId") String flowId, DataFlowSuspendMessage message) {
         dataplane.suspend(flowId, message).orElseThrow(ExceptionMapper.MAP_TO_WSRS);
         return Response.ok().build();
+    }
+
+    @POST
+    @Path("/{flowId}/resume")
+    public Response resume(@PathParam("flowId") String flowId, DataFlowResumeMessage message) {
+        var response = dataplane.resume(flowId, message).orElseThrow(ExceptionMapper.MAP_TO_WSRS);
+
+        return Response.ok(response).build();
     }
 
     @POST

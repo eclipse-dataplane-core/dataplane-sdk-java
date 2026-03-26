@@ -19,6 +19,7 @@ import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowResumeMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
@@ -89,6 +90,14 @@ public class DataplaneClient {
         return baseRequest()
                 .body(suspendMessage)
                 .post("/v1/dataflows/{id}/suspend", flowId)
+                .then()
+                .log().ifValidationFails();
+    }
+
+    public ValidatableResponse resume(String flowId, DataFlowResumeMessage resumeMessage) {
+        return baseRequest()
+                .body(resumeMessage)
+                .post("/v1/dataflows/{id}/resume", flowId)
                 .then()
                 .log().ifValidationFails();
     }

@@ -24,6 +24,7 @@ import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Context;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowResumeMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
@@ -81,6 +82,10 @@ public class ControlPlane {
 
     public ValidatableResponse providerSuspend(String flowId, DataFlowSuspendMessage suspendMessage) {
         return providerClient.suspend(flowId, suspendMessage);
+    }
+
+    public ValidatableResponse providerResume(String flowId, DataFlowResumeMessage resumeMessage) {
+        return providerClient.resume(flowId, resumeMessage);
     }
 
     public ValidatableResponse providerStatus(String flowId) {
