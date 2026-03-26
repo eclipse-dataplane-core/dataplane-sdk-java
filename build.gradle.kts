@@ -15,7 +15,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.21.1")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.21.2")
     implementation("com.nimbusds:nimbus-jose-jwt:10.8")
     implementation("jakarta.ws.rs:jakarta.ws.rs-api:4.0.0")
 
