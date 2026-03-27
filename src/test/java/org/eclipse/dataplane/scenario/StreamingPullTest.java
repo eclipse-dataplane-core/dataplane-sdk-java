@@ -9,6 +9,7 @@
  *
  *  Contributors:
  *       Think-it GmbH - initial API and implementation
+ *       Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V. - resume endpoint
  *
  */
 
@@ -22,6 +23,7 @@ import org.eclipse.dataplane.domain.DataAddress;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowResumeMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
@@ -133,7 +135,8 @@ class StreamingPullTest {
 
         consumerDataPlane.assertNoMoreDataIsTransferred();
 
-        var resumeResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
+        var resumeMessage = resumeMessage(providerProcessId);
+        var resumeResponse = controlPlane.providerResume(providerProcessId, resumeMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         controlPlane.consumerStarted(consumerProcessId, new DataFlowStartedNotificationMessage(resumeResponse.dataAddress())).statusCode(200);
 
         consumerDataPlane.assertDataIsFlowing();
@@ -149,6 +152,10 @@ class StreamingPullTest {
         return new DataFlowStartMessage("theMessageId", "theParticipantId", "theCounterPartyId",
                 "theDataspaceContext", providerProcessId, "theAgreementId", "theDatasetId", controlPlane.providerCallbackAddress(),
                 transferType, null, emptyList(), emptyMap());
+    }
+
+    private DataFlowResumeMessage resumeMessage(String providerProcessId) {
+        return new DataFlowResumeMessage("theMessageId", providerProcessId, null);
     }
 
     private static class ConsumerDataPlane {
@@ -221,6 +228,7 @@ class StreamingPullTest {
                 .registerAuthorization(new TestAuthorization())
                 .onStart(this::onStart)
                 .onSuspend(this::stopDataFlow)
+                .onResume(this::onStart)
                 .onTerminate(this::stopDataFlow)
                 .build();
         private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(5);
@@ -265,6 +273,5 @@ class StreamingPullTest {
                 return Result.failure(e);
             }
         }
-
     }
 }
