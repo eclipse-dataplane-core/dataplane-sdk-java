@@ -132,6 +132,7 @@ public class Dataplane {
                 .counterPartyId(message.counterPartyId())
                 .dataspaceContext(message.dataspaceContext())
                 .controlplaneId(controlplaneId)
+                .type(DataFlow.Type.CONSUMER)
                 .build();
 
         return checkControlPlane(controlplaneId)
@@ -166,6 +167,7 @@ public class Dataplane {
                 .counterPartyId(message.counterPartyId())
                 .dataspaceContext(message.dataspaceContext())
                 .controlplaneId(controlplaneId)
+                .type(DataFlow.Type.PROVIDER)
                 .build();
 
         return checkControlPlane(controlplaneId)
