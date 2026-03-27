@@ -64,6 +64,8 @@ import java.util.UUID;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static java.util.Collections.emptyMap;
+import static org.eclipse.dataplane.domain.dataflow.DataFlow.Type.CONSUMER;
+import static org.eclipse.dataplane.domain.dataflow.DataFlow.Type.PROVIDER;
 
 public class Dataplane {
 
@@ -132,7 +134,7 @@ public class Dataplane {
                 .counterPartyId(message.counterPartyId())
                 .dataspaceContext(message.dataspaceContext())
                 .controlplaneId(controlplaneId)
-                .type(DataFlow.Type.CONSUMER)
+                .type(CONSUMER)
                 .build();
 
         return checkControlPlane(controlplaneId)
@@ -167,7 +169,7 @@ public class Dataplane {
                 .counterPartyId(message.counterPartyId())
                 .dataspaceContext(message.dataspaceContext())
                 .controlplaneId(controlplaneId)
-                .type(DataFlow.Type.PROVIDER)
+                .type(PROVIDER)
                 .build();
 
         return checkControlPlane(controlplaneId)
@@ -201,7 +203,9 @@ public class Dataplane {
     public Result<DataFlowStatusMessage> resume(String flowId, DataFlowResumeMessage message) {
         return dataFlowStore.findById(flowId)
                 .map(dataFlow -> {
-                    if (message.dataAddress() != null) {
+                    var shouldReceiveDataAddress = (PROVIDER.equals(dataFlow.getType()) && dataFlow.isPush()) ||
+                            (CONSUMER.equals(dataFlow.getType()) && dataFlow.isPull());
+                    if (shouldReceiveDataAddress) {
                         dataFlow.setDataAddress(message.dataAddress());
                     }
                     return dataFlow;
@@ -210,7 +214,10 @@ public class Dataplane {
                 .compose(dataFlow -> {
                     dataFlow.transitionToStarted();
 
-                    var response = new DataFlowStatusMessage(id, flowId, dataFlow.getState().name(), dataFlow.getDataAddress(), null);
+                    var shouldProvideDataAddress = (PROVIDER.equals(dataFlow.getType()) && dataFlow.isPull()) ||
+                            (CONSUMER.equals(dataFlow.getType()) && dataFlow.isPush());
+                    var dataAddress = shouldProvideDataAddress ? dataFlow.getDataAddress() : null;
+                    var response = new DataFlowStatusMessage(id, flowId, dataFlow.getState().name(), dataAddress, null);
 
                     return save(dataFlow).map(it -> response);
                 });
