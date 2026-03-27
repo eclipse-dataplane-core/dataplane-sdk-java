@@ -39,6 +39,7 @@ public class DataFlow {
     private Map<String, Object> metadata;
     private DataAddress dataAddress;
     private String controlplaneId;
+    private Type type;
 
     public static DataFlow.Builder newInstance() {
         return new Builder();
@@ -162,6 +163,14 @@ public class DataFlow {
         return controlplaneId;
     }
 
+    public Type getType() {
+        return type;
+    }
+
+    public enum Type {
+        PROVIDER, CONSUMER
+    }
+
     public static class Builder {
         private final DataFlow dataFlow = new DataFlow();
 
@@ -241,6 +250,11 @@ public class DataFlow {
 
         public Builder controlplaneId(String controlplaneId) {
             dataFlow.controlplaneId = controlplaneId;
+            return this;
+        }
+
+        public Builder type(Type type) {
+            dataFlow.type = type;
             return this;
         }
     }
