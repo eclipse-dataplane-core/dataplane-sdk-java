@@ -40,7 +40,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -171,7 +170,7 @@ class StreamingPullTest {
 
 
         ConsumerDataPlane() {
-            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), List.of(createAuthorizationProfile("consumer"))));
+            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), createAuthorizationProfile("consumer")));
             try {
                 storage = Files.createTempDirectory("consumer-storage");
             } catch (IOException e) {
@@ -235,7 +234,7 @@ class StreamingPullTest {
         private final Map<String, ScheduledFuture<?>> flows = new HashMap<>();
 
         ProviderDataPlane() {
-            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), List.of(createAuthorizationProfile("provider"))));
+            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), createAuthorizationProfile("provider")));
         }
 
         public Object controller() {

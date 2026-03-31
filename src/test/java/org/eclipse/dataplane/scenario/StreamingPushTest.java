@@ -34,7 +34,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -114,7 +113,7 @@ public class StreamingPushTest {
                 .build();
 
         ProviderDataPlane() {
-            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), List.of(createAuthorizationProfile("provider"))));
+            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), createAuthorizationProfile("provider")));
         }
 
         private Result<DataFlow> onStart(DataFlow dataFlow) {
@@ -160,7 +159,7 @@ public class StreamingPushTest {
         private final Map<String, DataAddress> destinations = new HashMap<>();
 
         ConsumerDataPlane() {
-            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), List.of(createAuthorizationProfile("consumer"))));
+            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), createAuthorizationProfile("consumer")));
         }
 
         private Result<DataFlow> onPrepare(DataFlow dataFlow) {

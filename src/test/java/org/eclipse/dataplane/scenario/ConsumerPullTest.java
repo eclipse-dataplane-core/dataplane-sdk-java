@@ -37,7 +37,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -144,7 +143,7 @@ class ConsumerPullTest {
 
 
         ConsumerDataPlane() {
-            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), List.of(createAuthorizationProfile("consumer"))));
+            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), createAuthorizationProfile("consumer")));
             try {
                 storage = Files.createTempDirectory("consumer-storage");
             } catch (IOException e) {
@@ -180,7 +179,7 @@ class ConsumerPullTest {
         private final int filesToBeCreated;
 
         ProviderDataPlane(int fileToBeCreated) {
-            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), List.of(createAuthorizationProfile("provider"))));
+            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), createAuthorizationProfile("provider")));
             this.filesToBeCreated = fileToBeCreated;
         }
 

@@ -29,7 +29,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
-import java.util.List;
 import java.util.UUID;
 
 import static java.util.Collections.emptyList;
@@ -74,7 +73,7 @@ public class AuthorizationTest {
         var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(
                 "control-plane-id",
                 controlPlane.consumerCallbackAddress(),
-                List.of(TestAuthorization.createAuthorizationProfile("data-plane-id"))
+                TestAuthorization.createAuthorizationProfile("data-plane-id")
         );
         dataPlane.registerControlPlane(controlPlaneRegistrationMessage).orElseThrow(RuntimeException::new);
 
@@ -96,7 +95,7 @@ public class AuthorizationTest {
         var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(
                 "unmatching-control-plane-id",
                 controlPlane.consumerCallbackAddress(),
-                List.of(TestAuthorization.createAuthorizationProfile("data-plane-id"))
+                TestAuthorization.createAuthorizationProfile("data-plane-id")
         );
         dataPlane.registerControlPlane(controlPlaneRegistrationMessage).orElseThrow(RuntimeException::new);
 
@@ -113,7 +112,7 @@ public class AuthorizationTest {
         var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(
                 "control-plane-id",
                 controlPlane.consumerCallbackAddress(),
-                List.of(TestAuthorization.createAuthorizationProfile("data-plane-id"))
+                TestAuthorization.createAuthorizationProfile("data-plane-id")
         );
         dataPlane.registerControlPlane(controlPlaneRegistrationMessage).orElseThrow(RuntimeException::new);
 
