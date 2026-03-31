@@ -15,16 +15,13 @@
 package org.eclipse.dataplane.domain.registration;
 
 import java.net.URI;
-import java.util.List;
-
-import static java.util.Collections.emptyList;
 
 public record ControlPlaneRegistrationMessage(
         String controlplaneId,
         URI endpoint,
-        List<AuthorizationProfile> authorization
+        AuthorizationProfile authorization
 ) {
     public ControlPlaneRegistrationMessage(String controlplaneId, URI endpoint) {
-        this(controlplaneId, endpoint, emptyList());
+        this(controlplaneId, endpoint, null);
     }
 }

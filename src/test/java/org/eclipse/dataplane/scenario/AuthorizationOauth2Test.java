@@ -43,7 +43,6 @@ import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -103,7 +102,7 @@ public class AuthorizationOauth2Test {
         var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(
                 controlplaneId,
                 controlPlane.consumerCallbackAddress(),
-                List.of(oauth2AuthorizationProfile())
+                oauth2AuthorizationProfile()
         );
         dataPlane.registerControlPlane(controlPlaneRegistrationMessage).orElseThrow(RuntimeException::new);
 

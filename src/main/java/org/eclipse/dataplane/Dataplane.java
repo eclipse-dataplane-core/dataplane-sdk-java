@@ -352,7 +352,7 @@ public class Dataplane {
 
                     controlPlaneStore.findById(dataFlow.getControlplaneId())
                             .compose(controlPlane -> {
-                                var authorizationProfile = controlPlane.authorization();
+                                var authorizationProfile = controlPlane.getAuthorization();
                                 if (authorizationProfile != null) {
                                     var authorization = authorizations.get(authorizationProfile.getType());
                                     return authorization.authorizationHeader(authorizationProfile);
@@ -386,9 +386,10 @@ public class Dataplane {
     }
 
     public Result<Void> registerControlPlane(ControlPlaneRegistrationMessage message) {
-        for (var auth : message.authorization()) {
-            if (!authorizations.containsKey(auth.getType())) {
-                return Result.failure(new AuthorizationNotSupported(auth));
+        var authorization = message.authorization();
+        if (authorization != null) {
+            if (!authorizations.containsKey(authorization.getType())) {
+                return Result.failure(new AuthorizationNotSupported(authorization));
             }
         }
 

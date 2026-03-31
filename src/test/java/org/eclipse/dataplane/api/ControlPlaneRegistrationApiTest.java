@@ -27,7 +27,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
-import java.util.List;
 import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
@@ -115,7 +114,7 @@ class ControlPlaneRegistrationApiTest {
         void shouldReturnBadRequest_whenRequestedAuthMethodNotSupported() {
             var controlPlaneId = UUID.randomUUID().toString();
             var authorization = new AuthorizationProfile("unsupported");
-            var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(controlPlaneId, controlPlaneEndpoint, List.of(authorization));
+            var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(controlPlaneId, controlPlaneEndpoint, authorization);
 
             given()
                     .contentType(ContentType.JSON)
@@ -128,12 +127,11 @@ class ControlPlaneRegistrationApiTest {
                     .statusCode(400);
         }
 
-
         @Test
         void shouldRegisterAuthorizationType() {
             var controlPlaneId = UUID.randomUUID().toString();
             var authorization = new AuthorizationProfile("token");
-            var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(controlPlaneId, controlPlaneEndpoint, List.of(authorization));
+            var controlPlaneRegistrationMessage = new ControlPlaneRegistrationMessage(controlPlaneId, controlPlaneEndpoint, authorization);
 
             given()
                     .contentType(ContentType.JSON)
