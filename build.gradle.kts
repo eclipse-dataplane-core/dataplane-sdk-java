@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "org.eclipse.dataplane-core"
-version = "0.0.9-SNAPSHOT"
+version = "0.0.10-SNAPSHOT"
 
 repositories {
     mavenCentral()

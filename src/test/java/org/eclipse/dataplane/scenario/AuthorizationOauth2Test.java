@@ -31,17 +31,14 @@ import org.eclipse.dataplane.ControlPlane;
 import org.eclipse.dataplane.Dataplane;
 import org.eclipse.dataplane.HttpServer;
 import org.eclipse.dataplane.domain.Result;
-import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
 import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
 import org.eclipse.dataplane.domain.registration.Oauth2ClientCredentialsAuthorization;
-import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
@@ -49,9 +46,8 @@ import java.util.UUID;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.dataplane.MessageFactory.createPrepareMessage;
 
 public class AuthorizationOauth2Test {
 
@@ -117,12 +113,6 @@ public class AuthorizationOauth2Test {
                 .compose(dataFlow -> dataPlane.notifyPrepared(consumerProcessId, Result::success));
 
         assertThat(notifyPreparedResult.succeeded()).isTrue();
-    }
-
-    private @NonNull DataFlowPrepareMessage createPrepareMessage(String consumerProcessId, URI callbackAddress, String transferType) {
-        return new DataFlowPrepareMessage("theMessageId", "theParticipantId", "theCounterPartyId",
-                "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", callbackAddress,
-                transferType, emptyList(), emptyMap());
     }
 
     private AuthorizationProfile oauth2AuthorizationProfile() {

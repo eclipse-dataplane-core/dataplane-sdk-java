@@ -22,9 +22,7 @@ import org.eclipse.dataplane.authorization.TestAuthorization;
 import org.eclipse.dataplane.domain.DataAddress;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
-import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowResumeMessage;
-import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
@@ -49,9 +47,10 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.eclipse.dataplane.MessageFactory.createPrepareMessage;
+import static org.eclipse.dataplane.MessageFactory.createStartMessage;
 import static org.eclipse.dataplane.authorization.TestAuthorization.TOKEN_GENERATOR;
 import static org.eclipse.dataplane.authorization.TestAuthorization.createAuthorizationProfile;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.PREPARED;
@@ -86,14 +85,14 @@ class StreamingPullTest {
         var transferType = "FileSystemStreaming-PULL";
         var processId = UUID.randomUUID().toString();
         var consumerProcessId = "consumer_" + processId;
-        var prepareMessage = prepareMessage(consumerProcessId, transferType);
+        var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
 
         var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());
         assertThat(prepareResponse.dataAddress()).isNull();
 
         var providerProcessId = "provider_" + processId;
-        var startMessage = startMessage(providerProcessId, transferType);
+        var startMessage = createStartMessage(providerProcessId, controlPlane.providerCallbackAddress(), transferType);
         var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(startResponse.state()).isEqualTo(STARTED.name());
         assertThat(startResponse.dataAddress()).isNotNull();
@@ -114,14 +113,14 @@ class StreamingPullTest {
         var transferType = "FileSystemStreaming-PULL";
         var processId = UUID.randomUUID().toString();
         var consumerProcessId = "consumer_" + processId;
-        var prepareMessage = prepareMessage(consumerProcessId, transferType);
+        var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
 
         var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());
         assertThat(prepareResponse.dataAddress()).isNull();
 
         var providerProcessId = "provider_" + processId;
-        var startMessage = startMessage(providerProcessId, transferType);
+        var startMessage = createStartMessage(providerProcessId, controlPlane.providerCallbackAddress(), transferType);
         var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(startResponse.state()).isEqualTo(STARTED.name());
         assertThat(startResponse.dataAddress()).isNotNull();
@@ -139,18 +138,6 @@ class StreamingPullTest {
         controlPlane.consumerStarted(consumerProcessId, new DataFlowStartedNotificationMessage(resumeResponse.dataAddress())).statusCode(200);
 
         consumerDataPlane.assertDataIsFlowing();
-    }
-
-    private DataFlowPrepareMessage prepareMessage(String consumerProcessId, String transferType) {
-        return new DataFlowPrepareMessage("theMessageId", "theParticipantId", "theCounterPartyId",
-                "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", controlPlane.consumerCallbackAddress(),
-                transferType, emptyList(), emptyMap());
-    }
-
-    private DataFlowStartMessage startMessage(String providerProcessId, String transferType) {
-        return new DataFlowStartMessage("theMessageId", "theParticipantId", "theCounterPartyId",
-                "theDataspaceContext", providerProcessId, "theAgreementId", "theDatasetId", controlPlane.providerCallbackAddress(),
-                transferType, null, emptyList(), emptyMap());
     }
 
     private DataFlowResumeMessage resumeMessage(String providerProcessId) {

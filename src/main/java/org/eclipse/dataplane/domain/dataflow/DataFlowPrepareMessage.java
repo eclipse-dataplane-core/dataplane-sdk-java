@@ -28,6 +28,7 @@ public record DataFlowPrepareMessage(
         String datasetId,
         URI callbackAddress,
         String transferType,
+        Map<String, Object> claims,
         List<String> labels,
         Map<String, Object> metadata
 ) {

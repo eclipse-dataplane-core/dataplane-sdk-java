@@ -40,8 +40,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.COMPLETED;
@@ -198,7 +196,6 @@ class DataplaneTest {
     }
 
     private DataFlowPrepareMessage createPrepareMessage() {
-        return new DataFlowPrepareMessage("any", "any", "any", "any", "dataFlowId", "any", "any",
-                URI.create(controlPlane.baseUrl()), "Something-PUSH", emptyList(), emptyMap());
+        return MessageFactory.createPrepareMessage("dataFlowId", URI.create(controlPlane.baseUrl()), "Something-PUSH");
     }
 }
