@@ -17,12 +17,11 @@ package org.eclipse.dataplane.scenario;
 import org.eclipse.dataplane.ControlPlane;
 import org.eclipse.dataplane.Dataplane;
 import org.eclipse.dataplane.HttpServer;
+import org.eclipse.dataplane.MessageFactory;
 import org.eclipse.dataplane.authorization.TestAuthorization;
 import org.eclipse.dataplane.domain.DataAddress;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
-import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
-import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
 import org.junit.jupiter.api.AfterEach;
@@ -43,7 +42,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.dataplane.authorization.TestAuthorization.TOKEN_GENERATOR;
@@ -80,9 +78,7 @@ public class StreamingPushTest {
         var transferType = "FileSystemStreaming-PUSH";
         var processId = UUID.randomUUID().toString();
         var consumerProcessId = "consumer_" + processId;
-        var prepareMessage = new DataFlowPrepareMessage("theMessageId", "theParticipantId", "theCounterPartyId",
-                "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", URI.create("http://callback"),
-                transferType, emptyList(), emptyMap());
+        var prepareMessage = MessageFactory.createPrepareMessage(consumerProcessId, URI.create("http://callback"), transferType);
 
         var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());
@@ -90,9 +86,7 @@ public class StreamingPushTest {
         var destinationDataAddress = prepareResponse.dataAddress();
 
         var providerProcessId = "provider_" + processId;
-        var startMessage = new DataFlowStartMessage("theMessageId", "theParticipantId", "theCounterPartyId",
-                "theDataspaceContext", providerProcessId, "theAgreementId", "theDatasetId", controlPlane.providerCallbackAddress(),
-                transferType, destinationDataAddress, emptyList(), emptyMap());
+        var startMessage = MessageFactory.createStartMessage(providerProcessId, controlPlane.providerCallbackAddress(), transferType, destinationDataAddress);
         var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
 
         assertThat(startResponse.state()).isEqualTo(STARTED.name());

@@ -21,8 +21,6 @@ import org.eclipse.dataplane.authorization.TestAuthorization;
 import org.eclipse.dataplane.domain.DataAddress;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
-import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
-import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
@@ -41,9 +39,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.eclipse.dataplane.MessageFactory.createPrepareMessage;
+import static org.eclipse.dataplane.MessageFactory.createStartMessage;
 import static org.eclipse.dataplane.authorization.TestAuthorization.TOKEN_GENERATOR;
 import static org.eclipse.dataplane.authorization.TestAuthorization.createAuthorizationProfile;
 import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.COMPLETED;
@@ -146,18 +145,6 @@ public class ProviderPushTest {
 
         assertThat(controlPlane.consumerStatus(consumerProcessId).statusCode(200).extract().as(DataFlowStatusResponseMessage.class).state())
                 .isEqualTo(PREPARED.name());
-    }
-
-    private @NonNull DataFlowStartMessage createStartMessage(String providerProcessId, URI callbackAddress, String transferType, DataAddress destinationDataAddress) {
-        return new DataFlowStartMessage("theMessageId", "theParticipantId", "theCounterPartyId",
-                "theDataspaceContext", providerProcessId, "theAgreementId", "theDatasetId", callbackAddress,
-                transferType, destinationDataAddress, emptyList(), emptyMap());
-    }
-
-    private @NonNull DataFlowPrepareMessage createPrepareMessage(String consumerProcessId, URI callbackAddress, String transferType) {
-        return new DataFlowPrepareMessage("theMessageId", "theParticipantId", "theCounterPartyId",
-                "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", callbackAddress,
-                transferType, emptyList(), emptyMap());
     }
 
     private static class ProviderDataPlane {

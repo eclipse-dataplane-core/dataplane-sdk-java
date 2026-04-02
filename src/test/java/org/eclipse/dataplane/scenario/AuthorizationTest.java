@@ -19,21 +19,17 @@ import org.eclipse.dataplane.Dataplane;
 import org.eclipse.dataplane.HttpServer;
 import org.eclipse.dataplane.authorization.TestAuthorization;
 import org.eclipse.dataplane.domain.Result;
-import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
 import org.eclipse.dataplane.port.exception.DataFlowNotifyControlPlaneFailed;
-import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
 import java.util.UUID;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.dataplane.MessageFactory.createPrepareMessage;
 import static org.eclipse.dataplane.authorization.TestAuthorization.TOKEN_GENERATOR;
 
 public class AuthorizationTest {
@@ -128,12 +124,6 @@ public class AuthorizationTest {
         assertThat(notifyPreparedResult.getException()).isInstanceOfSatisfying(DataFlowNotifyControlPlaneFailed.class, e -> {
             assertThat(e.getResponse().statusCode()).isEqualTo(401);
         });
-    }
-
-    private @NonNull DataFlowPrepareMessage createPrepareMessage(String consumerProcessId, URI callbackAddress, String transferType) {
-        return new DataFlowPrepareMessage("theMessageId", "theParticipantId", "theCounterPartyId",
-                "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", callbackAddress,
-                transferType, emptyList(), emptyMap());
     }
 
 }

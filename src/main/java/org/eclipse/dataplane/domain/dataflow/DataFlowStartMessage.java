@@ -31,6 +31,7 @@ public record DataFlowStartMessage(
         URI callbackAddress,
         String transferType,
         DataAddress dataAddress,
+        Map<String, Object> claims,
         List<String> labels,
         Map<String, Object> metadata
 ) {
