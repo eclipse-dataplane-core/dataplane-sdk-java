@@ -134,8 +134,15 @@ class StreamingPullTest {
         consumerDataPlane.assertNoMoreDataIsTransferred();
 
         var resumeMessage = resumeMessage(providerProcessId);
-        var resumeResponse = controlPlane.providerResume(providerProcessId, resumeMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
-        controlPlane.consumerStarted(consumerProcessId, new DataFlowStartedNotificationMessage(resumeResponse.dataAddress())).statusCode(200);
+        var providerResumeResponse = controlPlane.providerResume(providerProcessId, resumeMessage)
+                .statusCode(200).extract().as(DataFlowStatusMessage.class);
+        assertThat(providerResumeResponse.dataAddress()).isNotNull();
+        controlPlane.consumerStarted(consumerProcessId, new DataFlowStartedNotificationMessage(providerResumeResponse.dataAddress()))
+                .statusCode(200);
+
+        var consumerResumeResponse = controlPlane.consumerResume(consumerProcessId, resumeMessage(consumerProcessId))
+                .statusCode(200).extract().as(DataFlowStatusMessage.class);
+        assertThat(consumerResumeResponse.dataAddress()).isNull();
 
         consumerDataPlane.assertDataIsFlowing();
     }
@@ -153,6 +160,8 @@ class StreamingPullTest {
                 .registerAuthorization(new TestAuthorization())
                 .onPrepare(Result::success)
                 .onStarted(this::onStarted)
+                .onSuspend(Result::success)
+                .onResume(Result::success)
                 .build();
 
 

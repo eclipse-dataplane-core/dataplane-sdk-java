@@ -84,8 +84,16 @@ public class ControlPlane {
         return providerClient.suspend(flowId, suspendMessage);
     }
 
+    public ValidatableResponse consumerSuspend(String flowId, DataFlowSuspendMessage suspendMessage) {
+        return consumerClient.suspend(flowId, suspendMessage);
+    }
+
     public ValidatableResponse providerResume(String flowId, DataFlowResumeMessage resumeMessage) {
         return providerClient.resume(flowId, resumeMessage);
+    }
+
+    public ValidatableResponse consumerResume(String flowId, DataFlowResumeMessage resumeMessage) {
+        return consumerClient.resume(flowId, resumeMessage);
     }
 
     public ValidatableResponse providerStatus(String flowId) {

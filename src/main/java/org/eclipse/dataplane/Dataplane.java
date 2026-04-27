@@ -18,6 +18,7 @@ package org.eclipse.dataplane;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eclipse.dataplane.domain.DataAddress;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.controlplane.ControlPlane;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
@@ -210,7 +211,8 @@ public class Dataplane {
                 .compose(dataFlow -> {
                     dataFlow.transitionToStarted();
 
-                    var response = new DataFlowStatusMessage(flowId, dataFlow.getState().name(), dataFlow.getDataAddress(), null);
+                    var dataAddress = getDataAddressForResume(dataFlow);
+                    var response = new DataFlowStatusMessage(flowId, dataFlow.getState().name(), dataAddress, null);
 
                     return save(dataFlow).map(it -> response);
                 });
@@ -339,6 +341,16 @@ public class Dataplane {
                         return Result.failure(new DataplaneNotRegistered(response.body()));
                     }
                 });
+    }
+
+    private DataAddress getDataAddressForResume(DataFlow dataFlow) {
+        if (dataFlow.isPull() && dataFlow.getType() == DataFlow.Type.PROVIDER) {
+            return dataFlow.getDataAddress();
+        }
+        if (dataFlow.isPush() && dataFlow.getType() == DataFlow.Type.CONSUMER) {
+            return dataFlow.getDataAddress();
+        }
+        return null;
     }
 
     private Result<Void> notifyControlPlane(String action, DataFlow dataFlow, Object message) {
