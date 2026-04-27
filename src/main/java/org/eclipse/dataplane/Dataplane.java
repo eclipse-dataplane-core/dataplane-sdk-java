@@ -144,9 +144,9 @@ public class Dataplane {
 
                     DataFlowStatusMessage response;
                     if (dataFlow.isPrepared() && dataFlow.isPush()) {
-                        response = new DataFlowStatusMessage(id, dataFlow.getId(), initialDataFlow.getState().name(), dataFlow.getDataAddress(), null);
+                        response = new DataFlowStatusMessage(dataFlow.getId(), initialDataFlow.getState().name(), dataFlow.getDataAddress(), null);
                     } else {
-                        response = new DataFlowStatusMessage(id, dataFlow.getId(), initialDataFlow.getState().name(), null, null);
+                        response = new DataFlowStatusMessage(dataFlow.getId(), initialDataFlow.getState().name(), null, null);
                     }
 
                     return save(dataFlow).map(it -> response);
@@ -179,9 +179,9 @@ public class Dataplane {
 
                     DataFlowStatusMessage response;
                     if (dataFlow.isStarted() && dataFlow.isPull()) {
-                        response = new DataFlowStatusMessage(id, dataFlow.getId(), dataFlow.getState().name(), dataFlow.getDataAddress(), null);
+                        response = new DataFlowStatusMessage(dataFlow.getId(), dataFlow.getState().name(), dataFlow.getDataAddress(), null);
                     } else {
-                        response = new DataFlowStatusMessage(id, dataFlow.getId(), dataFlow.getState().name(), null, null);
+                        response = new DataFlowStatusMessage(dataFlow.getId(), dataFlow.getState().name(), null, null);
                     }
                     return save(dataFlow).map(it -> response);
                 });
@@ -210,7 +210,7 @@ public class Dataplane {
                 .compose(dataFlow -> {
                     dataFlow.transitionToStarted();
 
-                    var response = new DataFlowStatusMessage(id, flowId, dataFlow.getState().name(), dataFlow.getDataAddress(), null);
+                    var response = new DataFlowStatusMessage(flowId, dataFlow.getState().name(), dataFlow.getDataAddress(), null);
 
                     return save(dataFlow).map(it -> response);
                 });
@@ -237,7 +237,7 @@ public class Dataplane {
                 .compose(onPrepare::action)
                 .compose(dataFlow -> {
                     dataFlow.transitionToPrepared();
-                    var message = new DataFlowStatusMessage(id, dataFlowId, dataFlow.getState().name(), dataFlow.getDataAddress(), null);
+                    var message = new DataFlowStatusMessage(dataFlowId, dataFlow.getState().name(), dataFlow.getDataAddress(), null);
 
                     return notifyControlPlane("prepared", dataFlow, message);
 
@@ -255,7 +255,7 @@ public class Dataplane {
                 .compose(dataFlow -> {
                     dataFlow.transitionToStarted();
 
-                    var message = new DataFlowStatusMessage(id, dataFlowId, dataFlow.getState().name(), dataFlow.getDataAddress(), null);
+                    var message = new DataFlowStatusMessage(dataFlowId, dataFlow.getState().name(), dataFlow.getDataAddress(), null);
 
                     return notifyControlPlane("started", dataFlow, message);
 
@@ -287,7 +287,7 @@ public class Dataplane {
                 .compose(dataFlow -> {
                     dataFlow.transitionToTerminated(throwable.getMessage());
 
-                    var message = new DataFlowStatusMessage(id, dataFlowId, dataFlow.getState().name(), null, throwable.getMessage());
+                    var message = new DataFlowStatusMessage(dataFlowId, dataFlow.getState().name(), null, throwable.getMessage());
 
                     return notifyControlPlane("errored", dataFlow, message);
                 });

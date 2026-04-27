@@ -18,7 +18,6 @@ package org.eclipse.dataplane.domain.dataflow;
 import org.eclipse.dataplane.domain.DataAddress;
 
 public record DataFlowStatusMessage(
-        String dataplaneId,
         String dataFlowId,
         String state,
         DataAddress dataAddress,

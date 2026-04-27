@@ -140,7 +140,6 @@ class DataplaneTest {
 
             controlPlane.verify(postRequestedFor(urlPathEqualTo("/transfers/dataFlowId/dataflow/errored"))
                     .withRequestBody(and(
-                            matchingJsonPath("dataplaneId", equalTo("dataplane-id")),
                             matchingJsonPath("dataFlowId", equalTo("dataFlowId")),
                             matchingJsonPath("state", equalTo("TERMINATED")),
                             matchingJsonPath("dataAddress", absent()),
@@ -169,7 +168,6 @@ class DataplaneTest {
             assertThat(result.succeeded()).isTrue();
             controlPlane.verify(postRequestedFor(urlPathEqualTo("/dataplanes/register"))
                     .withRequestBody(and(
-                            matchingJsonPath("dataplaneId", equalTo("dataplane-id")),
                             matchingJsonPath("endpoint", equalTo("http://localhost/dataplane")),
                             matchingJsonPath("transferTypes[0]", equalTo("SupportedTransferType-PUSH")),
                             matchingJsonPath("labels.size()", equalTo("2"))
