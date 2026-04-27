@@ -22,7 +22,9 @@ import org.eclipse.dataplane.authorization.TestAuthorization;
 import org.eclipse.dataplane.domain.DataAddress;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
+import org.eclipse.dataplane.domain.dataflow.DataFlowResumeMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,6 +97,47 @@ public class StreamingPushTest {
         consumerDataPlane.assertDataIsFlowing(consumerProcessId);
     }
 
+    @Test
+    void shouldSuspendAndResumeByConsumer() {
+        var transferType = "FileSystemStreaming-PUSH";
+        var processId = UUID.randomUUID().toString();
+        var consumerProcessId = "consumer_" + processId;
+        var prepareMessage = MessageFactory.createPrepareMessage(consumerProcessId, URI.create("http://callback"), transferType);
+
+        var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
+        assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());
+        assertThat(prepareResponse.dataAddress()).isNotNull();
+        var destinationDataAddress = prepareResponse.dataAddress();
+
+        var providerProcessId = "provider_" + processId;
+        var startMessage = MessageFactory.createStartMessage(providerProcessId, controlPlane.providerCallbackAddress(), transferType, destinationDataAddress);
+        var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
+
+        assertThat(startResponse.state()).isEqualTo(STARTED.name());
+        consumerDataPlane.assertDataIsFlowing(consumerProcessId);
+
+        controlPlane.consumerSuspend(consumerProcessId, new DataFlowSuspendMessage("a reason"))
+                .statusCode(200);
+
+        controlPlane.providerSuspend(providerProcessId, new DataFlowSuspendMessage("a reason"))
+                .statusCode(200);
+
+        consumerDataPlane.assertNoMoreDataIsTransferred(consumerProcessId);
+
+        var resumeMessage = new DataFlowResumeMessage("theMessageId", consumerProcessId, null);
+        var consumerResumeResult = controlPlane.consumerResume(consumerProcessId, resumeMessage)
+                .statusCode(200).extract().as(DataFlowStatusMessage.class);
+        assertThat(consumerResumeResult.state()).isEqualTo("STARTED");
+        assertThat(consumerResumeResult.dataAddress()).isNotNull();
+
+        var providerResumeResult = controlPlane.providerResume(providerProcessId, new DataFlowResumeMessage("theMessageId", providerProcessId, null))
+                .statusCode(200).extract().as(DataFlowStatusMessage.class);
+        assertThat(providerResumeResult.state()).isEqualTo("STARTED");
+        assertThat(providerResumeResult.dataAddress()).isNull();
+
+        consumerDataPlane.assertDataIsFlowing(consumerProcessId);
+    }
+
     private static class ProviderDataPlane {
 
         private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(5);
@@ -104,6 +147,7 @@ public class StreamingPushTest {
                 .registerAuthorization(new TestAuthorization())
                 .onStart(this::onStart)
                 .onSuspend(this::stopFlow)
+                .onResume(this::onStart)
                 .build();
 
         ProviderDataPlane() {
@@ -147,6 +191,7 @@ public class StreamingPushTest {
                 .registerAuthorization(new TestAuthorization())
                 .onPrepare(this::onPrepare)
                 .onSuspend(Result::success)
+                .onResume(Result::success)
                 .onCompleted(this::onCompleted)
                 .build();
 
@@ -203,6 +248,19 @@ public class StreamingPushTest {
                 });
             });
 
+        }
+
+        public void assertNoMoreDataIsTransferred(String consumerProcessId) {
+            var destinationDataAddress = sdk.getById(consumerProcessId).map(DataFlow::getDataAddress)
+                    .orElseThrow(f -> new AssertionError("No DataFlow with id %s found".formatted(consumerProcessId)));
+
+            var folder = Path.of(destinationDataAddress.endpoint()).toFile();
+
+            await().untilAsserted(() -> {
+                var filesTransferred = Objects.requireNonNull(folder.listFiles()).length;
+                Thread.sleep(1000L);
+                assertThat(folder.listFiles()).hasSize(filesTransferred);
+            });
         }
 
     }
