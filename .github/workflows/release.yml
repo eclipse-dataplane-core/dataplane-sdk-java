@@ -15,19 +15,17 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: update version in build.gradle.kts
-        shell: bash
-        run: sed -i 's/^version = .*/version = "${{ github.event.inputs.version }}"/' build.gradle.kts
-
-      - name: commit, tag and push
+      - name: create release branch, update version and tag
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "release/v${{ github.event.inputs.version }}"
+          sed -i 's/^version = .*/version = "${{ github.event.inputs.version }}"/' build.gradle.kts
           git add build.gradle.kts
-          git commit -m "release: ${{ github.event.inputs.version }} [skip ci]"
+          git commit -m "release: ${{ github.event.inputs.version }}"
           git tag "v${{ github.event.inputs.version }}"
-          git push origin main --tags
+          git push origin "release/v${{ github.event.inputs.version }}" --tags
 
   publish:
     needs: prepare
