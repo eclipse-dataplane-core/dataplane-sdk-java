@@ -3,6 +3,11 @@ name: publish
 on:
   workflow_dispatch:
   workflow_call:
+    inputs:
+      ref:
+        description: 'Git ref to checkout'
+        required: false
+        type: string
   push:
     branches:
       - main
@@ -12,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || github.ref }}
 
       - uses: actions/setup-java@v5
         with:
@@ -35,8 +42,7 @@ jobs:
 
       - name: list gpg keys
         shell: bash
-        run: |
-          gpg -K
+        run: gpg -K
 
       - name: publish
         shell: bash

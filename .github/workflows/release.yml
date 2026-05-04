@@ -33,6 +33,8 @@ jobs:
     needs: prepare
     uses: ./.github/workflows/publish.yml
     secrets: inherit
+    with:
+      ref: v${{ github.event.inputs.version }}
 
   github-release:
     needs: publish
