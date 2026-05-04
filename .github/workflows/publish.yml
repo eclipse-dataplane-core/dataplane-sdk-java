@@ -20,8 +20,7 @@ jobs:
 
       - name: list gpg keys
         shell: bash
-        run: |
-          gpg -K
+        run: gpg -K
 
       - name: import GPG private key
         shell: bash
