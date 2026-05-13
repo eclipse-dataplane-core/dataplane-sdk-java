@@ -1,6 +1,7 @@
 package org.eclipse.dataplane.port.store.sql;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.domain.DataAddress;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
@@ -16,8 +17,8 @@ public class SqlDataFlowStore extends AbstractSqlStore implements DataFlowStore 
 
     private final DataFlowStatements statements;
 
-    public SqlDataFlowStore(String databaseUrl, String databaseUsername, String databasePassword, DataFlowStatements statements) {
-        super(databaseUrl, databaseUsername, databasePassword);
+    public SqlDataFlowStore(ObjectMapper objectMapper, String databaseUrl, String databaseUsername, String databasePassword, DataFlowStatements statements) {
+        super(objectMapper, databaseUrl, databaseUsername, databasePassword);
         this.statements = statements;
     }
 
@@ -27,26 +28,29 @@ public class SqlDataFlowStore extends AbstractSqlStore implements DataFlowStore 
 
         try (var statement = connection.prepareStatement(statements.upsertTemplate())) {
             statement.setString(1, dataFlow.getId());
-            statement.setString(2, dataFlow.getState().name());
-            statement.setString(3, dataFlow.getTransferType());
-            statement.setString(4, dataFlow.getDatasetId());
-            statement.setString(5, dataFlow.getAgreementId());
-            statement.setString(6, dataFlow.getParticipantId());
-            statement.setString(7, dataFlow.getCounterPartyId());
-            statement.setString(8, dataFlow.getDataspaceContext());
-            statement.setString(9, dataFlow.getCallbackAddress().toString());
-            statement.setString(10, dataFlow.getSuspensionReason());
-            statement.setString(11, dataFlow.getTerminationReason());
-            statement.setString(12, objectMapper.writeValueAsString(dataFlow.getLabels()));
-            statement.setString(13, objectMapper.writeValueAsString(dataFlow.getMetadata()));
-            statement.setString(14, objectMapper.writeValueAsString(dataFlow.getDataAddress()));
-            statement.setString(15, dataFlow.getControlplaneId());
-            statement.setString(16, dataFlow.getType().name());
+            statement.setString(2, dataFlow.getTransferType());
+            statement.setString(3, dataFlow.getType().name());
+            statement.setString(4, dataFlow.getState().name());
+            statement.setString(5, dataFlow.getDatasetId());
+            statement.setString(6, dataFlow.getAgreementId());
+            statement.setString(7, dataFlow.getParticipantId());
+            statement.setString(8, dataFlow.getCounterPartyId());
+            statement.setString(9, dataFlow.getDataspaceContext());
+            statement.setString(10, dataFlow.getCallbackAddress().toString());
+            statement.setString(11, dataFlow.getSuspensionReason());
+            statement.setString(12, dataFlow.getTerminationReason());
+            statement.setString(13, objectMapper.writeValueAsString(dataFlow.getLabels()));
+            statement.setString(14, objectMapper.writeValueAsString(dataFlow.getMetadata()));
+            statement.setString(15, objectMapper.writeValueAsString(dataFlow.getDataAddress()));
+            statement.setString(16, dataFlow.getControlplaneId());
+
 
             statement.executeUpdate();
             return Result.success();
         } catch (Exception e) {
-            return Result.failure(new PersistenceException(format("Failed to persist DataFlow with ID %s.", dataFlow.getId()), e));
+            return Result.failure(new PersistenceException(format("Failed to persist DataFlow with id %s.", dataFlow.getId()), e));
+        } finally {
+            closeConnection(connection);
         }
     }
 
@@ -89,7 +93,9 @@ public class SqlDataFlowStore extends AbstractSqlStore implements DataFlowStore 
 
             return Result.success(dataFlow);
         } catch (Exception e) {
-            return Result.failure(new PersistenceException(format("Failed to read DataFlow with ID %s.", flowId), e));
+            return Result.failure(new PersistenceException(format("Failed to read DataFlow with id %s.", flowId), e));
+        } finally {
+            closeConnection(connection);
         }
     }
 }

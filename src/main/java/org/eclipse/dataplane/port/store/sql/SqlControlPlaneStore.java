@@ -1,5 +1,6 @@
 package org.eclipse.dataplane.port.store.sql;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.controlplane.ControlPlane;
 import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
@@ -15,8 +16,8 @@ public class SqlControlPlaneStore extends AbstractSqlStore implements ControlPla
 
     private final ControlPlaneStatements statements;
 
-    public SqlControlPlaneStore(String databaseUrl, String databaseUsername, String databasePassword, ControlPlaneStatements statements) {
-        super(databaseUrl, databaseUsername, databasePassword);
+    public SqlControlPlaneStore(ObjectMapper objectMapper, String databaseUrl, String databaseUsername, String databasePassword, ControlPlaneStatements statements) {
+        super(objectMapper, databaseUrl, databaseUsername, databasePassword);
         this.statements = statements;
     }
 
@@ -32,7 +33,9 @@ public class SqlControlPlaneStore extends AbstractSqlStore implements ControlPla
             statement.executeUpdate();
             return Result.success();
         } catch (Exception e) {
-            return Result.failure(new PersistenceException(format("Failed to persist ControlPlane with ID %s.", controlPlane.getId()), e));
+            return Result.failure(new PersistenceException(format("Failed to persist ControlPlane with id %s.", controlPlane.getId()), e));
+        } finally {
+            closeConnection(connection);
         }
     }
 
@@ -51,11 +54,13 @@ public class SqlControlPlaneStore extends AbstractSqlStore implements ControlPla
             var controlplane = ControlPlane.newInstance()
                     .id(controlplaneId)
                     .endpoint(URI.create(resultSet.getString("endpoint")))
-                    .authorization(objectMapper.readValue(resultSet.getString("authorization"), AuthorizationProfile.class))
+                    .authorization(objectMapper.readValue(resultSet.getString("auth"), AuthorizationProfile.class))
                     .build();
             return Result.success(controlplane);
         } catch (Exception e) {
-            return Result.failure(new PersistenceException(format("Failed to read ControlPlane with ID %s.", controlplaneId), e));
+            return Result.failure(new PersistenceException(format("Failed to read ControlPlane with id %s.", controlplaneId), e));
+        } finally {
+            closeConnection(connection);
         }
     }
 
@@ -65,10 +70,15 @@ public class SqlControlPlaneStore extends AbstractSqlStore implements ControlPla
 
         try (var statement = connection.prepareStatement(statements.deleteByIdTemplate())) {
             statement.setString(1, id);
-            statement.executeUpdate();
+            var rows = statement.executeUpdate();
+            if (rows < 1) {
+                return Result.failure(new ResourceNotFoundException(format("ControlPlane with id %s not found.", id)));
+            }
             return Result.success();
         } catch (Exception e) {
-            return Result.failure(new PersistenceException(format("Failed to delete ControlPlane with ID %s.", id), e));
+            return Result.failure(new PersistenceException(format("Failed to delete ControlPlane with id %s.", id), e));
+        } finally {
+            closeConnection(connection);
         }
     }
 
@@ -79,9 +89,12 @@ public class SqlControlPlaneStore extends AbstractSqlStore implements ControlPla
         try (var statement = connection.prepareStatement(statements.countByIdTemplate())) {
             statement.setString(1, controlplaneId);
             var resultSet = statement.executeQuery();
+            resultSet.next();
             return resultSet.getInt(1) > 0;
         } catch (Exception e) {
-            throw new PersistenceException(format("Failed to check for existence of ControlPlane with ID %s.", controlplaneId), e);
+            throw new PersistenceException(format("Failed to check for existence of ControlPlane with id %s.", controlplaneId), e);
+        } finally {
+            closeConnection(connection);
         }
     }
 

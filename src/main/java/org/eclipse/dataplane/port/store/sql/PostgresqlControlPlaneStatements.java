@@ -3,10 +3,10 @@ package org.eclipse.dataplane.port.store.sql;
 public class PostgresqlControlPlaneStatements implements ControlPlaneStatements {
     @Override
     public String upsertTemplate() {
-        return "INSERT INTO control_planes (id, endpoint, authorization) VALUES (?, ?, ?::json)"
+        return "INSERT INTO control_planes (id, endpoint, auth) VALUES (?, ?, ?::json)"
                 + " ON CONFLICT (id) DO UPDATE SET"
                 + " endpoint = EXCLUDED.endpoint,"
-                + " authorization = EXCLUDED.authorization";
+                + " auth = EXCLUDED.auth";
     }
 
     @Override

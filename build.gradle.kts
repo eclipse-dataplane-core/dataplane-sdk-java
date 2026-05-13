@@ -34,6 +34,9 @@ dependencies {
     testImplementation("org.mockito:mockito-core:5.23.0")
     testImplementation("org.slf4j:slf4j-simple:2.0.17")
     testImplementation("org.wiremock:wiremock-jetty12:3.13.2")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.5")
+    testImplementation("org.testcontainers:testcontainers-postgresql:2.0.5")
+    testImplementation("org.postgresql:postgresql:42.7.11")
 }
 
 tasks.test {

@@ -6,17 +6,16 @@ import org.eclipse.dataplane.port.exception.PersistenceException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 
-import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
-
 public abstract class AbstractSqlStore {
 
-    protected final ObjectMapper objectMapper = new ObjectMapper().configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
+    protected ObjectMapper objectMapper;
 
     private final String databaseUrl;
     private final String databaseUsername;
     private final String databasePassword;
 
-    public AbstractSqlStore(String databaseUrl, String databaseUsername, String databasePassword) {
+    public AbstractSqlStore(ObjectMapper objectMapper, String databaseUrl, String databaseUsername, String databasePassword) {
+        this.objectMapper = objectMapper;
         this.databaseUrl = databaseUrl;
         this.databaseUsername = databaseUsername;
         this.databasePassword = databasePassword;
@@ -30,4 +29,11 @@ public abstract class AbstractSqlStore {
         }
     }
 
+    protected void closeConnection(Connection connection) {
+        try {
+            connection.close();
+        } catch (Exception e) {
+            throw new PersistenceException("Failed to commit transaction.", e);
+        }
+    }
 }
