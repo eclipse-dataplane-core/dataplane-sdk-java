@@ -1,4 +1,4 @@
-package org.eclipse.dataplane.port.store;
+package org.eclipse.dataplane.port.store.sql;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.eclipse.dataplane.domain.DataAddress;
@@ -6,6 +6,7 @@ import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
 import org.eclipse.dataplane.port.exception.PersistenceException;
 import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
+import org.eclipse.dataplane.port.store.DataFlowStore;
 
 import java.net.URI;
 
@@ -13,36 +14,18 @@ import static java.lang.String.format;
 
 public class SqlDataFlowStore extends AbstractSqlStore implements DataFlowStore {
 
-    public SqlDataFlowStore(String databaseUrl, String databaseUsername, String databasePassword) {
+    private final DataFlowStatements statements;
+
+    public SqlDataFlowStore(String databaseUrl, String databaseUsername, String databasePassword, DataFlowStatements statements) {
         super(databaseUrl, databaseUsername, databasePassword);
+        this.statements = statements;
     }
 
     @Override
     public Result<Void> save(DataFlow dataFlow) {
         var connection = getConnection();
 
-        var sql = "INSERT INTO data_flows (id, transfer_type, type, state, dataset_id, agreement_id, participant_id,"
-                + " counter_party_id, dataspace_context, callback_address, suspension_reason, termination_reason,"
-                + " labels, metadata, data_address, controlplane_id) VALUES"
-                + " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::json, ?::json, ?::json, ?)"
-                + " ON CONFLICT (id) DO UPDATE SET"
-                + " transfer_type = EXCLUDED.transfer_type,"
-                + " type = EXCLUDED.type,"
-                + " state = EXCLUDED.state,"
-                + " dataset_id = EXCLUDED.dataset_id,"
-                + " agreement_id = EXCLUDED.agreement_id,"
-                + " participant_id = EXCLUDED.participant_id,"
-                + " counter_party_id = EXCLUDED.counter_party_id,"
-                + " dataspace_context = EXCLUDED.dataspace_context,"
-                + " callback_address = EXCLUDED.callback_address,"
-                + " suspension_reason = EXCLUDED.suspension_reason,"
-                + " termination_reason = EXCLUDED.termination_reason,"
-                + " labels = EXCLUDED.labels,"
-                + " metadata = EXCLUDED.metadata,"
-                + " data_address = EXCLUDED.data_address,"
-                + " controlplane_id = EXCLUDED.controlplane_id";
-
-        try (var statement = connection.prepareStatement(sql)) {
+        try (var statement = connection.prepareStatement(statements.upsertTemplate())) {
             statement.setString(1, dataFlow.getId());
             statement.setString(2, dataFlow.getState().name());
             statement.setString(3, dataFlow.getTransferType());
@@ -71,9 +54,7 @@ public class SqlDataFlowStore extends AbstractSqlStore implements DataFlowStore 
     public Result<DataFlow> findById(String flowId) {
         var connection = getConnection();
 
-        var sql = "SELECT * FROM data_flows WHERE id = ?";
-
-        try (var statement = connection.prepareStatement(sql)) {
+        try (var statement = connection.prepareStatement(statements.findByIdTemplate())) {
             statement.setString(1, flowId);
             var resultSet = statement.executeQuery();
 

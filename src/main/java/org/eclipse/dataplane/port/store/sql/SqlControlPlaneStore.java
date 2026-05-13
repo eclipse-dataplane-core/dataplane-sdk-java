@@ -1,10 +1,11 @@
-package org.eclipse.dataplane.port.store;
+package org.eclipse.dataplane.port.store.sql;
 
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.controlplane.ControlPlane;
 import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
 import org.eclipse.dataplane.port.exception.PersistenceException;
 import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
+import org.eclipse.dataplane.port.store.ControlPlaneStore;
 
 import java.net.URI;
 
@@ -12,20 +13,18 @@ import static java.lang.String.format;
 
 public class SqlControlPlaneStore extends AbstractSqlStore implements ControlPlaneStore {
 
-    public SqlControlPlaneStore(String databaseUrl, String databaseUsername, String databasePassword) {
+    private final ControlPlaneStatements statements;
+
+    public SqlControlPlaneStore(String databaseUrl, String databaseUsername, String databasePassword, ControlPlaneStatements statements) {
         super(databaseUrl, databaseUsername, databasePassword);
+        this.statements = statements;
     }
 
     @Override
     public Result<Void> save(ControlPlane controlPlane) {
         var connection = getConnection();
 
-        var sql = "INSERT INTO control_planes (id, endpoint, authorization) VALUES (?, ?, ?::json)"
-                + " ON CONFLICT (id) DO UPDATE SET"
-                + " endpoint = EXCLUDED.endpoint,"
-                + " authorization = EXCLUDED.authorization";
-
-        try (var statement = connection.prepareStatement(sql)) {
+        try (var statement = connection.prepareStatement(statements.upsertTemplate())) {
             statement.setString(1, controlPlane.getId());
             statement.setString(2, controlPlane.getEndpoint().toString());
             statement.setString(3, objectMapper.writeValueAsString(controlPlane.getAuthorization()));
@@ -41,9 +40,7 @@ public class SqlControlPlaneStore extends AbstractSqlStore implements ControlPla
     public Result<ControlPlane> findById(String controlplaneId) {
         var connection = getConnection();
 
-        var sql = "SELECT * FROM control_planes WHERE id = ?";
-
-        try (var statement = connection.prepareStatement(sql)) {
+        try (var statement = connection.prepareStatement(statements.findByIdTemplate())) {
             statement.setString(1, controlplaneId);
             var resultSet = statement.executeQuery();
 
@@ -66,9 +63,7 @@ public class SqlControlPlaneStore extends AbstractSqlStore implements ControlPla
     public Result<Void> delete(String id) {
         var connection = getConnection();
 
-        var sql = "DELETE FROM control_planes WHERE id = ?";
-
-        try (var statement = connection.prepareStatement(sql)) {
+        try (var statement = connection.prepareStatement(statements.deleteByIdTemplate())) {
             statement.setString(1, id);
             statement.executeUpdate();
             return Result.success();
@@ -81,9 +76,7 @@ public class SqlControlPlaneStore extends AbstractSqlStore implements ControlPla
     public boolean exists(String controlplaneId) {
         var connection = getConnection();
 
-        var sql = "SELECT COUNT(*) FROM control_planes WHERE id = ?";
-
-        try (var statement = connection.prepareStatement(sql)) {
+        try (var statement = connection.prepareStatement(statements.countByIdTemplate())) {
             statement.setString(1, controlplaneId);
             var resultSet = statement.executeQuery();
             return resultSet.getInt(1) > 0;

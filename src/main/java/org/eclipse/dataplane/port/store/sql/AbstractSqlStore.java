@@ -1,4 +1,4 @@
-package org.eclipse.dataplane.port.store;
+package org.eclipse.dataplane.port.store.sql;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.port.exception.PersistenceException;
