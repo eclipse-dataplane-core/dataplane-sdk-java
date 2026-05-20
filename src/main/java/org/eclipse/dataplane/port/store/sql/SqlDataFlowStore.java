@@ -40,7 +40,7 @@ public class SqlDataFlowStore extends AbstractSqlStore implements DataFlowStore 
     public Result<Void> save(DataFlow dataFlow) {
         var connection = getConnection();
 
-        try (var statement = connection.prepareStatement(statements.upsertTemplate())) {
+        try (var statement = connection.prepareStatement(statements.upsertDataFlowTemplate())) {
             statement.setString(1, dataFlow.getId());
             statement.setString(2, dataFlow.getTransferType());
             statement.setString(3, dataFlow.getType().name());
@@ -58,7 +58,6 @@ public class SqlDataFlowStore extends AbstractSqlStore implements DataFlowStore 
             statement.setString(15, objectMapper.writeValueAsString(dataFlow.getDataAddress()));
             statement.setString(16, dataFlow.getControlplaneId());
 
-
             statement.executeUpdate();
             return Result.success();
         } catch (Exception e) {
@@ -72,7 +71,7 @@ public class SqlDataFlowStore extends AbstractSqlStore implements DataFlowStore 
     public Result<DataFlow> findById(String flowId) {
         var connection = getConnection();
 
-        try (var statement = connection.prepareStatement(statements.findByIdTemplate())) {
+        try (var statement = connection.prepareStatement(statements.findDataFlowByIdTemplate())) {
             statement.setString(1, flowId);
             var resultSet = statement.executeQuery();
 

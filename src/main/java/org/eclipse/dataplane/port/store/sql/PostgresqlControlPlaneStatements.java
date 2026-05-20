@@ -16,7 +16,7 @@ package org.eclipse.dataplane.port.store.sql;
 
 public class PostgresqlControlPlaneStatements implements ControlPlaneStatements {
     @Override
-    public String upsertTemplate() {
+    public String upsertControlPlaneTemplate() {
         return "INSERT INTO control_planes (id, endpoint, auth) VALUES (?, ?, ?::json)"
                 + " ON CONFLICT (id) DO UPDATE SET"
                 + " endpoint = EXCLUDED.endpoint,"
@@ -24,17 +24,17 @@ public class PostgresqlControlPlaneStatements implements ControlPlaneStatements 
     }
 
     @Override
-    public String findByIdTemplate() {
+    public String findControlPlaneByIdTemplate() {
         return "SELECT * FROM control_planes WHERE id = ?";
     }
 
     @Override
-    public String deleteByIdTemplate() {
+    public String deleteControlPlaneByIdTemplate() {
         return "DELETE FROM control_planes WHERE id = ?";
     }
 
     @Override
-    public String countByIdTemplate() {
+    public String countControlPlaneByIdTemplate() {
         return "SELECT COUNT(*) FROM control_planes WHERE id = ?";
     }
 }

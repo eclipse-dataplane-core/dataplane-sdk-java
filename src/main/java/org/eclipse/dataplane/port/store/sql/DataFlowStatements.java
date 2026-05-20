@@ -14,10 +14,30 @@
 
 package org.eclipse.dataplane.port.store.sql;
 
+import org.eclipse.dataplane.domain.dataflow.DataFlow;
+
+/**
+ * Provides templates for SQL statements for managing data flows. Used by the
+ * {@link SqlDataFlowStore} within PreparedStatements. Can be implemented for different SQL
+ * dialects.
+ */
 public interface DataFlowStatements {
 
-    String upsertTemplate();
+    /**
+     * Provides the template for an upsert statement for data flows. The returned statement must
+     * contain placeholders for all properties of a data flow in the order shown in
+     * {@link SqlDataFlowStore#save(DataFlow)}.
+     *
+     * @return the upsert statement template including the placeholders
+     */
+    String upsertDataFlowTemplate();
 
-    String findByIdTemplate();
+    /**
+     * Provides the template for a find-by-id statement for data flows.The returned statement must
+     * contain a placeholder for the data flow id.
+     *
+     * @return the find-by-id statement template including the placeholder
+     */
+    String findDataFlowByIdTemplate();
 
 }

@@ -16,7 +16,7 @@ package org.eclipse.dataplane.port.store.sql;
 
 public class PostgresqlDataFlowStatements implements DataFlowStatements {
     @Override
-    public String upsertTemplate() {
+    public String upsertDataFlowTemplate() {
         return "INSERT INTO data_flows (id, transfer_type, type, state, dataset_id, agreement_id, participant_id,"
                 + " counter_party_id, dataspace_context, callback_address, suspension_reason, termination_reason,"
                 + " labels, metadata, data_address, controlplane_id) VALUES"
@@ -40,7 +40,7 @@ public class PostgresqlDataFlowStatements implements DataFlowStatements {
     }
 
     @Override
-    public String findByIdTemplate() {
+    public String findDataFlowByIdTemplate() {
         return "SELECT * FROM data_flows WHERE id = ?";
     }
 }

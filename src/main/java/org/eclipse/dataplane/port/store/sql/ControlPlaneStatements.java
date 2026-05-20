@@ -14,14 +14,46 @@
 
 package org.eclipse.dataplane.port.store.sql;
 
+import org.eclipse.dataplane.domain.controlplane.ControlPlane;
+
+/**
+ * Provides templates for SQL statements for managing control planes. Used by the
+ * {@link SqlControlPlaneStore} within PreparedStatements. Can be implemented for different SQL
+ * dialects.
+ */
 public interface ControlPlaneStatements {
 
-    String upsertTemplate();
+    /**
+     * Provides the template for an upsert statement for control planes. The returned statement must
+     * contain placeholders for all properties of a control plane.
+     *
+     * @return the upsert statement template including the placeholders
+     */
+    String upsertControlPlaneTemplate();
 
-    String findByIdTemplate();
+    /**
+     * Provides the template for a find-by-id statement for control planes.The returned statement
+     * must contain a placeholder for the control plane id.
+     *
+     * @return the find-by-id statement template including the placeholder
+     */
+    String findControlPlaneByIdTemplate();
 
-    String deleteByIdTemplate();
+    /**
+     * Provides the template for a delete-by-id statement for control planes. The returned statement
+     * must contain a placeholder for the control plane id in the order shown in
+     * {@link SqlControlPlaneStore#save(ControlPlane)}.
+     *
+     * @return the delete-by-id statement template including the placeholder
+     */
+    String deleteControlPlaneByIdTemplate();
 
-    String countByIdTemplate();
+    /**
+     * Provides the template for a count-by-id statement for control planes. The returned statement
+     * must contain a placeholder for the control plane id.
+     *
+     * @return the count-by-id statement template including the placeholder
+     */
+    String countControlPlaneByIdTemplate();
 
 }
