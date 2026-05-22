@@ -64,7 +64,7 @@ public abstract class AbstractSqlStore {
         }
 
         try {
-            return object instanceof String? object.toString() : objectMapper.writeValueAsString(object);
+            return object instanceof String ? object.toString() : objectMapper.writeValueAsString(object);
         } catch (JsonProcessingException e) {
             throw new PersistenceException("Failed to convert object to JSON.", e);
         }

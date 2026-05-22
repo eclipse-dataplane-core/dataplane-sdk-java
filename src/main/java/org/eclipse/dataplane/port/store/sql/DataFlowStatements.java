@@ -14,8 +14,6 @@
 
 package org.eclipse.dataplane.port.store.sql;
 
-import org.eclipse.dataplane.domain.dataflow.DataFlow;
-
 /**
  * Provides templates for SQL statements for managing data flows. Used by the
  * {@link SqlDataFlowStore} within PreparedStatements. Can be implemented for different SQL

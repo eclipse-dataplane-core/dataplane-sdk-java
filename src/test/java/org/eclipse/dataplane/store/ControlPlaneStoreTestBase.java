@@ -106,7 +106,7 @@ public abstract class ControlPlaneStoreTestBase {
 
         @Test
         void delete_doesNotExist_shouldReturnNotFound() {
-             var deleteResult = store().delete("nonExistent");
+            var deleteResult = store().delete("nonExistent");
 
             assertThat(deleteResult.failed()).isTrue();
             assertThat(deleteResult.getException()).isInstanceOf(ResourceNotFoundException.class);
