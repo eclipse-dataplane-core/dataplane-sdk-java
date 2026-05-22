@@ -42,7 +42,7 @@ public class SqlControlPlaneStore extends AbstractSqlStore implements ControlPla
         try (var statement = connection.prepareStatement(statements.upsertControlPlaneTemplate())) {
             statement.setString(1, controlPlane.getId());
             statement.setString(2, controlPlane.getEndpoint().toString());
-            statement.setString(3, objectMapper.writeValueAsString(controlPlane.getAuthorization()));
+            statement.setString(3, toJson(controlPlane.getAuthorization()));
 
             statement.executeUpdate();
             return Result.success();
@@ -68,7 +68,7 @@ public class SqlControlPlaneStore extends AbstractSqlStore implements ControlPla
             var controlplane = ControlPlane.newInstance()
                     .id(controlplaneId)
                     .endpoint(URI.create(resultSet.getString("endpoint")))
-                    .authorization(objectMapper.readValue(resultSet.getString("auth"), AuthorizationProfile.class))
+                    .authorization(fromJson(resultSet.getString("auth"), AuthorizationProfile.class))
                     .build();
             return Result.success(controlplane);
         } catch (Exception e) {

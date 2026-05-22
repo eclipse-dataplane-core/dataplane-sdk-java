@@ -25,8 +25,7 @@ public interface DataFlowStatements {
 
     /**
      * Provides the template for an upsert statement for data flows. The returned statement must
-     * contain placeholders for all properties of a data flow in the order shown in
-     * {@link SqlDataFlowStore#save(DataFlow)}.
+     * contain placeholders for all properties of a data flow.
      *
      * @return the upsert statement template including the placeholders
      */

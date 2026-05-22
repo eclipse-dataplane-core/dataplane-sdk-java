@@ -53,9 +53,9 @@ public class SqlDataFlowStore extends AbstractSqlStore implements DataFlowStore 
             statement.setString(10, dataFlow.getCallbackAddress().toString());
             statement.setString(11, dataFlow.getSuspensionReason());
             statement.setString(12, dataFlow.getTerminationReason());
-            statement.setString(13, objectMapper.writeValueAsString(dataFlow.getLabels()));
-            statement.setString(14, objectMapper.writeValueAsString(dataFlow.getMetadata()));
-            statement.setString(15, objectMapper.writeValueAsString(dataFlow.getDataAddress()));
+            statement.setString(13, toJson(dataFlow.getLabels()));
+            statement.setString(14, toJson(dataFlow.getMetadata()));
+            statement.setString(15, toJson(dataFlow.getDataAddress()));
             statement.setString(16, dataFlow.getControlplaneId());
 
             statement.executeUpdate();
@@ -89,11 +89,9 @@ public class SqlDataFlowStore extends AbstractSqlStore implements DataFlowStore 
                     .counterPartyId(resultSet.getString("counter_party_id"))
                     .dataspaceContext(resultSet.getString("dataspace_context"))
                     .callbackAddress(URI.create(resultSet.getString("callback_address")))
-                    .labels(objectMapper.readValue(resultSet.getString("labels"), new TypeReference<>() {
-                    }))
-                    .metadata(objectMapper.readValue(resultSet.getString("metadata"), new TypeReference<>() {
-                    }))
-                    .dataAddress(objectMapper.readValue(resultSet.getString("data_address"), DataAddress.class))
+                    .labels(fromJson(resultSet.getString("labels"), new TypeReference<>() {}))
+                    .metadata(fromJson(resultSet.getString("metadata"), new TypeReference<>() {}))
+                    .dataAddress(fromJson(resultSet.getString("data_address"), DataAddress.class))
                     .controlplaneId(resultSet.getString("controlplane_id"))
                     .type(DataFlow.Type.valueOf(resultSet.getString("type")))
                     .build();
