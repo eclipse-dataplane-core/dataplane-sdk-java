@@ -16,8 +16,7 @@ package org.eclipse.dataplane.store.sql;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.port.store.ControlPlaneStore;
-import org.eclipse.dataplane.port.store.sql.PostgresqlControlPlaneStatements;
-import org.eclipse.dataplane.port.store.sql.SqlControlPlaneStore;
+import org.eclipse.dataplane.port.store.sql.PostgresControlPlaneStore;
 import org.eclipse.dataplane.store.ControlPlaneStoreTestBase;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -37,7 +36,7 @@ class PostgresControlPlaneStoreTest extends ControlPlaneStoreTestBase {
     private static final String PASSWORD = "password";
 
     private final ObjectMapper mapper = new ObjectMapper().configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
-    private SqlControlPlaneStore store;
+    private PostgresControlPlaneStore store;
 
     @Container
     static PostgreSQLContainer postgres = new PostgreSQLContainer(POSTGRES_IMAGE)
@@ -59,7 +58,7 @@ class PostgresControlPlaneStoreTest extends ControlPlaneStoreTestBase {
 
     @BeforeEach
     void initStore() {
-        store = new SqlControlPlaneStore(mapper, postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword(), new PostgresqlControlPlaneStatements());
+        store = new PostgresControlPlaneStore(mapper, postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
     }
 
     @Override

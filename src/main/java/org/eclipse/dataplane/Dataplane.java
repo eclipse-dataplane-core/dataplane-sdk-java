@@ -51,6 +51,7 @@ import org.eclipse.dataplane.port.store.ControlPlaneStore;
 import org.eclipse.dataplane.port.store.DataFlowStore;
 import org.eclipse.dataplane.port.store.InMemoryControlPlaneStore;
 import org.eclipse.dataplane.port.store.InMemoryDataFlowStore;
+import org.eclipse.dataplane.port.store.Stores;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -454,13 +455,9 @@ public class Dataplane {
             return this;
         }
 
-        public Builder dataFlowStore(DataFlowStore store) {
-            dataplane.dataFlowStore = store;
-            return this;
-        }
-
-        public Builder controlPlaneStore(ControlPlaneStore store) {
-            dataplane.controlPlaneStore = store;
+        public Builder stores(Stores stores) {
+            dataplane.dataFlowStore = stores.dataFlowStore();
+            dataplane.controlPlaneStore = stores.controlPlaneStore();
             return this;
         }
 

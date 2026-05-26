@@ -27,20 +27,17 @@ import java.net.URI;
 
 import static java.lang.String.format;
 
-public class SqlDataFlowStore extends AbstractSqlStore implements DataFlowStore {
+public class PostgresDataFlowStore extends AbstractSqlStore implements DataFlowStore {
 
-    private final DataFlowStatements statements;
-
-    public SqlDataFlowStore(ObjectMapper objectMapper, String databaseUrl, String databaseUsername, String databasePassword, DataFlowStatements statements) {
+    public PostgresDataFlowStore(ObjectMapper objectMapper, String databaseUrl, String databaseUsername, String databasePassword) {
         super(objectMapper, databaseUrl, databaseUsername, databasePassword);
-        this.statements = statements;
     }
 
     @Override
     public Result<Void> save(DataFlow dataFlow) {
         var connection = getConnection();
 
-        try (var statement = connection.prepareStatement(statements.upsertDataFlowTemplate())) {
+        try (var statement = connection.prepareStatement(upsertDataFlowTemplate())) {
             statement.setString(1, dataFlow.getId());
             statement.setString(2, dataFlow.getTransferType());
             statement.setString(3, dataFlow.getType().name());
@@ -71,7 +68,7 @@ public class SqlDataFlowStore extends AbstractSqlStore implements DataFlowStore 
     public Result<DataFlow> findById(String flowId) {
         var connection = getConnection();
 
-        try (var statement = connection.prepareStatement(statements.findDataFlowByIdTemplate())) {
+        try (var statement = connection.prepareStatement(findDataFlowByIdTemplate())) {
             statement.setString(1, flowId);
             var resultSet = statement.executeQuery();
 
@@ -89,6 +86,8 @@ public class SqlDataFlowStore extends AbstractSqlStore implements DataFlowStore 
                     .counterPartyId(resultSet.getString("counter_party_id"))
                     .dataspaceContext(resultSet.getString("dataspace_context"))
                     .callbackAddress(URI.create(resultSet.getString("callback_address")))
+                    .suspensionReason(resultSet.getString("suspension_reason"))
+                    .terminationReason(resultSet.getString("termination_reason"))
                     .labels(fromJson(resultSet.getString("labels"), new TypeReference<>() {}))
                     .metadata(fromJson(resultSet.getString("metadata"), new TypeReference<>() {}))
                     .dataAddress(fromJson(resultSet.getString("data_address"), DataAddress.class))
@@ -96,17 +95,38 @@ public class SqlDataFlowStore extends AbstractSqlStore implements DataFlowStore 
                     .type(DataFlow.Type.valueOf(resultSet.getString("type")))
                     .build();
 
-            if (dataFlow.getState() == DataFlow.State.SUSPENDED) {
-                dataFlow.transitionToSuspended(resultSet.getString("suspension_reason"));
-            } else if (dataFlow.getState() == DataFlow.State.TERMINATED) {
-                dataFlow.transitionToTerminated(resultSet.getString("termination_reason"));
-            }
-
             return Result.success(dataFlow);
         } catch (Exception e) {
             return Result.failure(new PersistenceException(format("Failed to read DataFlow with id %s.", flowId), e));
         } finally {
             closeConnection(connection);
         }
+    }
+
+    private String upsertDataFlowTemplate() {
+        return "INSERT INTO data_flows (id, transfer_type, type, state, dataset_id, agreement_id, participant_id," +
+                " counter_party_id, dataspace_context, callback_address, suspension_reason, termination_reason," +
+                " labels, metadata, data_address, controlplane_id) VALUES" +
+                " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?::json, ?::json, ?::json, ?)" +
+                " ON CONFLICT (id) DO UPDATE SET" +
+                " transfer_type = EXCLUDED.transfer_type," +
+                " type = EXCLUDED.type," +
+                " state = EXCLUDED.state," +
+                " dataset_id = EXCLUDED.dataset_id," +
+                " agreement_id = EXCLUDED.agreement_id," +
+                " participant_id = EXCLUDED.participant_id," +
+                " counter_party_id = EXCLUDED.counter_party_id," +
+                " dataspace_context = EXCLUDED.dataspace_context," +
+                " callback_address = EXCLUDED.callback_address," +
+                " suspension_reason = EXCLUDED.suspension_reason," +
+                " termination_reason = EXCLUDED.termination_reason," +
+                " labels = EXCLUDED.labels," +
+                " metadata = EXCLUDED.metadata," +
+                " data_address = EXCLUDED.data_address," +
+                " controlplane_id = EXCLUDED.controlplane_id";
+    }
+
+    private String findDataFlowByIdTemplate() {
+        return "SELECT * FROM data_flows WHERE id = ?";
     }
 }

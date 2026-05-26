@@ -243,6 +243,16 @@ public class DataFlow {
             return this;
         }
 
+        public Builder suspensionReason(String suspensionReason) {
+            dataFlow.suspensionReason = suspensionReason;
+            return this;
+        }
+
+        public Builder terminationReason(String terminationReason) {
+            dataFlow.terminationReason = terminationReason;
+            return this;
+        }
+
         public Builder metadata(Map<String, Object> metadata) {
             dataFlow.metadata = metadata;
             return this;

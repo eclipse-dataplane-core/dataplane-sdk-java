@@ -26,20 +26,17 @@ import java.net.URI;
 
 import static java.lang.String.format;
 
-public class SqlControlPlaneStore extends AbstractSqlStore implements ControlPlaneStore {
+public class PostgresControlPlaneStore extends AbstractSqlStore implements ControlPlaneStore {
 
-    private final ControlPlaneStatements statements;
-
-    public SqlControlPlaneStore(ObjectMapper objectMapper, String databaseUrl, String databaseUsername, String databasePassword, ControlPlaneStatements statements) {
+    public PostgresControlPlaneStore(ObjectMapper objectMapper, String databaseUrl, String databaseUsername, String databasePassword) {
         super(objectMapper, databaseUrl, databaseUsername, databasePassword);
-        this.statements = statements;
     }
 
     @Override
     public Result<Void> save(ControlPlane controlPlane) {
         var connection = getConnection();
 
-        try (var statement = connection.prepareStatement(statements.upsertControlPlaneTemplate())) {
+        try (var statement = connection.prepareStatement(upsertControlPlaneTemplate())) {
             statement.setString(1, controlPlane.getId());
             statement.setString(2, controlPlane.getEndpoint().toString());
             statement.setString(3, toJson(controlPlane.getAuthorization()));
@@ -57,7 +54,7 @@ public class SqlControlPlaneStore extends AbstractSqlStore implements ControlPla
     public Result<ControlPlane> findById(String controlplaneId) {
         var connection = getConnection();
 
-        try (var statement = connection.prepareStatement(statements.findControlPlaneByIdTemplate())) {
+        try (var statement = connection.prepareStatement(findControlPlaneByIdTemplate())) {
             statement.setString(1, controlplaneId);
             var resultSet = statement.executeQuery();
 
@@ -82,7 +79,7 @@ public class SqlControlPlaneStore extends AbstractSqlStore implements ControlPla
     public Result<Void> delete(String id) {
         var connection = getConnection();
 
-        try (var statement = connection.prepareStatement(statements.deleteControlPlaneByIdTemplate())) {
+        try (var statement = connection.prepareStatement(deleteControlPlaneByIdTemplate())) {
             statement.setString(1, id);
             var rows = statement.executeUpdate();
             if (rows < 1) {
@@ -100,7 +97,7 @@ public class SqlControlPlaneStore extends AbstractSqlStore implements ControlPla
     public boolean exists(String controlplaneId) {
         var connection = getConnection();
 
-        try (var statement = connection.prepareStatement(statements.countControlPlaneByIdTemplate())) {
+        try (var statement = connection.prepareStatement(countControlPlaneByIdTemplate())) {
             statement.setString(1, controlplaneId);
             var resultSet = statement.executeQuery();
             resultSet.next();
@@ -112,4 +109,22 @@ public class SqlControlPlaneStore extends AbstractSqlStore implements ControlPla
         }
     }
 
+    private String upsertControlPlaneTemplate() {
+        return "INSERT INTO control_planes (id, endpoint, auth) VALUES (?, ?, ?::json)" +
+                " ON CONFLICT (id) DO UPDATE SET" +
+                " endpoint = EXCLUDED.endpoint," +
+                " auth = EXCLUDED.auth";
+    }
+
+    private String findControlPlaneByIdTemplate() {
+        return "SELECT * FROM control_planes WHERE id = ?";
+    }
+
+    private String deleteControlPlaneByIdTemplate() {
+        return "DELETE FROM control_planes WHERE id = ?";
+    }
+
+    private String countControlPlaneByIdTemplate() {
+        return "SELECT COUNT(*) FROM control_planes WHERE id = ?";
+    }
 }

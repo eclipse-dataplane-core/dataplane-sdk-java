@@ -16,8 +16,7 @@ package org.eclipse.dataplane.store.sql;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.port.store.DataFlowStore;
-import org.eclipse.dataplane.port.store.sql.PostgresqlDataFlowStatements;
-import org.eclipse.dataplane.port.store.sql.SqlDataFlowStore;
+import org.eclipse.dataplane.port.store.sql.PostgresDataFlowStore;
 import org.eclipse.dataplane.store.DataFlowStoreTestBase;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -37,7 +36,7 @@ class PostgresDataFlowStoreTest extends DataFlowStoreTestBase {
     private static final String PASSWORD = "password";
 
     private final ObjectMapper mapper = new ObjectMapper().configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
-    private SqlDataFlowStore store;
+    private PostgresDataFlowStore store;
 
     @Container
     static PostgreSQLContainer postgres = new PostgreSQLContainer(POSTGRES_IMAGE)
@@ -59,7 +58,7 @@ class PostgresDataFlowStoreTest extends DataFlowStoreTestBase {
 
     @BeforeEach
     void initStore() {
-        store = new SqlDataFlowStore(mapper, postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword(), new PostgresqlDataFlowStatements());
+        store = new PostgresDataFlowStore(mapper, postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
     }
 
     @Override
