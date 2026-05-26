@@ -51,6 +51,7 @@ import org.eclipse.dataplane.port.store.ControlPlaneStore;
 import org.eclipse.dataplane.port.store.DataFlowStore;
 import org.eclipse.dataplane.port.store.InMemoryControlPlaneStore;
 import org.eclipse.dataplane.port.store.InMemoryDataFlowStore;
+import org.eclipse.dataplane.port.store.Stores;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -69,8 +70,8 @@ import static java.util.Collections.emptyMap;
 public class Dataplane {
 
     private final ObjectMapper objectMapper = new ObjectMapper().configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
-    private final DataFlowStore dataFlowStore = new InMemoryDataFlowStore(objectMapper);
-    private final ControlPlaneStore controlPlaneStore = new InMemoryControlPlaneStore(objectMapper);
+    private DataFlowStore dataFlowStore = new InMemoryDataFlowStore(objectMapper);
+    private ControlPlaneStore controlPlaneStore = new InMemoryControlPlaneStore(objectMapper);
     private String id;
     private URI endpoint;
     private final Set<String> transferTypes = new HashSet<>();
@@ -451,6 +452,12 @@ public class Dataplane {
 
         public Builder label(String label) {
             dataplane.labels.add(label);
+            return this;
+        }
+
+        public Builder stores(Stores stores) {
+            dataplane.dataFlowStore = stores.dataFlowStore();
+            dataplane.controlPlaneStore = stores.controlPlaneStore();
             return this;
         }
 
