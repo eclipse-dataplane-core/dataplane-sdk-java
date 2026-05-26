@@ -19,7 +19,7 @@ dependencies {
     implementation("com.nimbusds:nimbus-jose-jwt:10.9")
     implementation("jakarta.ws.rs:jakarta.ws.rs-api:4.0.0")
 
-    testImplementation(platform("org.junit:junit-bom:6.0.3"))
+    testImplementation(platform("org.junit:junit-bom:6.1.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("io.rest-assured:rest-assured:6.0.0")
