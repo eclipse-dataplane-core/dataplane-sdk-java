@@ -71,7 +71,7 @@ mavenPublishing {
         }
         scm {
             url.set("https://github.com/eclipse-dataplane-core/dataplane-sdk-java")
-            connection.set("scm:git:git@github.com:eclipse-dataplane-core/dataplane-sdk-go.git")
+            connection.set("scm:git:git@github.com:eclipse-dataplane-core/dataplane-sdk-java.git")
         }
     }
 }
