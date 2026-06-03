@@ -18,15 +18,15 @@ import java.net.http.HttpResponse;
 
 public class DataFlowNotifyControlPlaneFailed extends Exception {
     private final String action;
-    private final HttpResponse<Void> response;
+    private final HttpResponse<String> response;
 
-    public DataFlowNotifyControlPlaneFailed(String action, HttpResponse<Void> response) {
-        super("control-plane responded with %s".formatted(response.statusCode()));
+    public DataFlowNotifyControlPlaneFailed(String action, HttpResponse<String> response) {
+        super("control-plane responded with %s: %s".formatted(response.statusCode(), response.body()));
         this.action = action;
         this.response = response;
     }
 
-    public HttpResponse<Void> getResponse() {
+    public HttpResponse<String> getResponse() {
         return response;
     }
 

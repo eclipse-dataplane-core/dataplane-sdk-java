@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "org.eclipse.dataplane-core"
-version = "0.0.11-SNAPSHOT"
+version = "0.0.12-SNAPSHOT"
 
 subprojects {
     apply(plugin = "signing")

@@ -14,19 +14,21 @@
 
 package org.eclipse.dataplane.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
+@JsonIgnoreProperties(value = {"@type"}, allowGetters = true)
 public record DataAddress(
-        @JsonProperty("@type") String type,
         String endpointType,
         String endpoint,
         List<EndpointProperty> endpointProperties
 ) {
 
-    public DataAddress(String endpointType, String endpoint, List<EndpointProperty> endpointProperties) {
-        this("DataAddress", endpointType, endpoint, endpointProperties);
+    @JsonProperty("@type")
+    public String getType() {
+        return "DataAddress";
     }
 
     public record EndpointProperty(

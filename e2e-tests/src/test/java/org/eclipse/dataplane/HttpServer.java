@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
+import org.jspecify.annotations.NonNull;
 
 import static org.eclipse.jetty.ee10.servlet.ServletContextHandler.NO_SESSIONS;
 
@@ -49,7 +50,19 @@ public class HttpServer {
     }
 
     public void deploy(String basePath, Object controller) {
-        var servletHolder = createServletHolder(controller);
+        deploy(basePath, createServletContainerFor(controller));
+    }
+
+    public void deploy(String basePath, ResourceConfig resourceConfig) {
+        var servlet = new ServletContainer(resourceConfig);
+        var servletHolder = new ServletHolder(Source.EMBEDDED);
+        servletHolder.setServlet(servlet);
+        servletContextHandler.getServletHandler().addServletWithMapping(servletHolder, basePath + "/*");
+    }
+
+    public void deploy(String basePath, ServletContainer servlet) {
+        var servletHolder = new ServletHolder(Source.EMBEDDED);
+        servletHolder.setServlet(servlet);
         servletContextHandler.getServletHandler().addServletWithMapping(servletHolder, basePath + "/*");
     }
 
@@ -61,7 +74,7 @@ public class HttpServer {
         }
     }
 
-    private ServletHolder createServletHolder(Object controller) {
+    private @NonNull ServletContainer createServletContainerFor(Object controller) {
         var resourceConfig = new ResourceConfig();
         resourceConfig.registerClasses(controller.getClass());
         resourceConfig.registerInstances(new AbstractBinder() {
@@ -70,10 +83,7 @@ public class HttpServer {
                 bind(controller).to((Class<? super Object>) controller.getClass());
             }
         });
-        var servlet = new ServletContainer(resourceConfig);
-        var servletHolder = new ServletHolder(Source.EMBEDDED);
-        servletHolder.setServlet(servlet);
-        return servletHolder;
+        return new ServletContainer(resourceConfig);
     }
 
     public int port() {

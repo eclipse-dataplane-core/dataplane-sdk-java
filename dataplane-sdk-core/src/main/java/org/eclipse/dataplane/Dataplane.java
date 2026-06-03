@@ -62,13 +62,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
-import static java.util.Collections.emptyMap;
 
 public class Dataplane {
 
-    private final ObjectMapper objectMapper = new ObjectMapper().configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .setDefaultPropertyInclusion(NON_NULL);
     private DataFlowStore dataFlowStore = new InMemoryDataFlowStore(objectMapper);
     private ControlPlaneStore controlPlaneStore = new InMemoryControlPlaneStore(objectMapper);
     private String id;
@@ -265,8 +267,8 @@ public class Dataplane {
         return dataFlowStore.findById(dataFlowId)
                 .compose(dataFlow -> {
                     dataFlow.transitionToCompleted();
-
-                    return notifyControlPlane("completed", dataFlow, emptyMap());
+                    var message = new DataFlowStatusMessage(dataFlowId, dataFlow.getState().name(), null, null);
+                    return notifyControlPlane("completed", dataFlow, message);
                 });
     }
 
@@ -372,7 +374,7 @@ public class Dataplane {
                             })
                             .onSuccess(authorizationHeader -> requestBuilder.header(AUTHORIZATION, authorizationHeader));
 
-                    return httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.discarding());
+                    return httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString());
                 })
                 .compose(response -> {
                     var successful = response.statusCode() >= 200 && response.statusCode() < 300;

@@ -132,7 +132,11 @@ public class DataFlow {
     }
 
     public boolean isPush() {
-        return transferType.split("-")[1].equalsIgnoreCase("PUSH");
+        return transferType.substring(transferType.lastIndexOf('-') + 1).equalsIgnoreCase("push");
+    }
+
+    public boolean isPull() {
+        return !isPush();
     }
 
     public boolean isInitiating() {
@@ -145,10 +149,6 @@ public class DataFlow {
 
     public boolean isStarted() {
         return state == State.STARTED;
-    }
-
-    public boolean isPull() {
-        return transferType.split("-")[1].equalsIgnoreCase("PULL");
     }
 
     public void setDataAddress(DataAddress dataAddress) {

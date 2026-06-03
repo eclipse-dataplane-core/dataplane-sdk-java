@@ -91,7 +91,8 @@ class ConsumerPullTest {
         assertThat(startResponse.state()).isEqualTo(STARTED.name());
         assertThat(startResponse.dataAddress()).isNotNull();
 
-        controlPlane.consumerStarted(consumerProcessId, new DataFlowStartedNotificationMessage(startResponse.dataAddress())).statusCode(200);
+        var message = new DataFlowStartedNotificationMessage(UUID.randomUUID().toString(), startResponse.dataAddress());
+        controlPlane.consumerStarted(consumerProcessId, message).statusCode(200);
 
         await().untilAsserted(() -> {
             assertThat(consumerDataPlane.storage.toFile().listFiles()).hasSize(filesAvailableOnProvider);
@@ -197,7 +198,7 @@ class ConsumerPullTest {
                     Files.writeString(path, UUID.randomUUID().toString());
                 }
 
-                var dataAddress = new DataAddress("FileSystem", "directory", destinationDirectory.toString(), emptyList());
+                var dataAddress = new DataAddress("FileSystem", destinationDirectory.toString(), emptyList());
                 dataFlow.setDataAddress(dataAddress);
                 return Result.success(dataFlow);
             } catch (IOException e) {

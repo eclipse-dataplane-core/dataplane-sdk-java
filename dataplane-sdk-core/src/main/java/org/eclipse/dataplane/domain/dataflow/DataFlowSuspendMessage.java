@@ -15,6 +15,7 @@
 package org.eclipse.dataplane.domain.dataflow;
 
 public record DataFlowSuspendMessage(
+        String messageId,
         String reason
 ) {
 }
