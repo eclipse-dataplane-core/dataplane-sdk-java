@@ -40,13 +40,12 @@ import org.eclipse.dataplane.logic.OnStart;
 import org.eclipse.dataplane.logic.OnStarted;
 import org.eclipse.dataplane.logic.OnSuspend;
 import org.eclipse.dataplane.logic.OnTerminate;
-import org.eclipse.dataplane.port.DataPlaneRegistrationApiController;
-import org.eclipse.dataplane.port.DataPlaneSignalingApiController;
 import org.eclipse.dataplane.port.exception.AuthorizationNotSupported;
 import org.eclipse.dataplane.port.exception.ControlPlaneNotRegistered;
 import org.eclipse.dataplane.port.exception.DataFlowNotifyControlPlaneFailed;
 import org.eclipse.dataplane.port.exception.DataplaneNotRegistered;
 import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
+import org.eclipse.dataplane.port.exception.UnauthorizedException;
 import org.eclipse.dataplane.port.store.ControlPlaneStore;
 import org.eclipse.dataplane.port.store.DataFlowStore;
 import org.eclipse.dataplane.port.store.InMemoryControlPlaneStore;
@@ -64,10 +63,11 @@ import java.util.Set;
 import java.util.UUID;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
-import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static java.util.Collections.emptyMap;
 
 public class Dataplane {
+
+    private static final String AUTHORIZATION_HEADER = "Authorization";
 
     private final ObjectMapper objectMapper = new ObjectMapper().configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
     private DataFlowStore dataFlowStore = new InMemoryDataFlowStore(objectMapper);
@@ -92,12 +92,8 @@ public class Dataplane {
         return new Builder();
     }
 
-    public DataPlaneSignalingApiController controller() {
-        return new DataPlaneSignalingApiController(this, authorizations);
-    }
-
-    public DataPlaneRegistrationApiController registrationController() {
-        return new DataPlaneRegistrationApiController(this);
+    public Map<String, Authorization> authorizations() {
+        return authorizations;
     }
 
     public Result<DataFlow> getById(String dataFlowId) {
@@ -120,7 +116,13 @@ public class Dataplane {
         return Result.failure(new ControlPlaneNotRegistered(controlplaneId));
     }
 
-    public Result<DataFlowStatusMessage> prepare(String controlplaneId, DataFlowPrepareMessage message) {
+    public Result<DataFlowStatusMessage> prepare(String authorization, DataFlowPrepareMessage message) {
+        var controlPlaneIdResult = extractControlPlaneId(authorization);
+        if (controlPlaneIdResult.failed()) {
+            return Result.failure(controlPlaneIdResult.getException());
+        }
+        var controlPlaneId = controlPlaneIdResult.getContent();
+
         var initialDataFlow = DataFlow.newInstance()
                 .id(message.processId())
                 .state(DataFlow.State.INITIATING)
@@ -133,11 +135,11 @@ public class Dataplane {
                 .participantId(message.participantId())
                 .counterPartyId(message.counterPartyId())
                 .dataspaceContext(message.dataspaceContext())
-                .controlplaneId(controlplaneId)
+                .controlplaneId(controlPlaneId)
                 .type(DataFlow.Type.CONSUMER)
                 .build();
 
-        return checkControlPlane(controlplaneId)
+        return checkControlPlane(controlPlaneId)
                 .compose(v -> onPrepare.action(initialDataFlow))
                 .compose(dataFlow -> {
                     if (dataFlow.isInitiating()) {
@@ -156,7 +158,13 @@ public class Dataplane {
     }
 
 
-    public Result<DataFlowStatusMessage> start(String controlplaneId, DataFlowStartMessage message) {
+    public Result<DataFlowStatusMessage> start(String authorization, DataFlowStartMessage message) {
+        var controlPlaneIdResult = extractControlPlaneId(authorization);
+        if (controlPlaneIdResult.failed()) {
+            return Result.failure(controlPlaneIdResult.getException());
+        }
+        var controlPlaneId = controlPlaneIdResult.getContent();
+
         var initialDataFlow = DataFlow.newInstance()
                 .id(message.processId())
                 .state(DataFlow.State.INITIATING)
@@ -168,11 +176,11 @@ public class Dataplane {
                 .participantId(message.participantId())
                 .counterPartyId(message.counterPartyId())
                 .dataspaceContext(message.dataspaceContext())
-                .controlplaneId(controlplaneId)
+                .controlplaneId(controlPlaneId)
                 .type(DataFlow.Type.PROVIDER)
                 .build();
 
-        return checkControlPlane(controlplaneId)
+        return checkControlPlane(controlPlaneId)
                 .compose(v -> onStart.action(initialDataFlow))
                 .compose(dataFlow -> {
                     if (dataFlow.isInitiating()) {
@@ -372,7 +380,7 @@ public class Dataplane {
                                 }
                                 return Result.failure(new ResourceNotFoundException("ControlPlane has no authorization"));
                             })
-                            .onSuccess(authorizationHeader -> requestBuilder.header(AUTHORIZATION, authorizationHeader));
+                            .onSuccess(authorizationHeader -> requestBuilder.header(AUTHORIZATION_HEADER, authorizationHeader));
 
                     return httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.discarding());
                 })
@@ -392,6 +400,13 @@ public class Dataplane {
         } catch (JsonProcessingException e) {
             return Result.failure(e);
         }
+    }
+
+    private Result<String> extractControlPlaneId(String authorizationHeader) {
+        return authorizations.values().stream()
+                .map(authorization -> authorization.extractCallerId(authorizationHeader))
+                .filter(Result::succeeded).findFirst()
+                .orElseGet(() -> Result.failure(new UnauthorizedException("Authorization method not recognized")));
     }
 
     public ControlPlaneStore controlPlaneStore() {

@@ -20,6 +20,7 @@ import org.eclipse.dataplane.HttpServer;
 import org.eclipse.dataplane.authorization.TestAuthorization;
 import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
+import org.eclipse.dataplane.port.DataPlaneRegistrationApiController;
 import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +46,7 @@ class ControlPlaneRegistrationApiTest {
     void setUp() {
         httpServer.start();
 
-        httpServer.deploy("/runtime/data-plane", sdk.registrationController());
+        httpServer.deploy("/runtime/data-plane", new DataPlaneRegistrationApiController(sdk));
     }
 
     @AfterEach

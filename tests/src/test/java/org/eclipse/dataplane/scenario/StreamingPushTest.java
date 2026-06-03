@@ -26,6 +26,7 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowResumeMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
+import org.eclipse.dataplane.port.DataPlaneSignalingApiController;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -180,7 +181,7 @@ public class StreamingPushTest {
         }
 
         public Object controller() {
-            return sdk.controller();
+            return new DataPlaneSignalingApiController(sdk);
         }
     }
 
@@ -230,7 +231,7 @@ public class StreamingPushTest {
         }
 
         public Object controller() {
-            return sdk.controller();
+            return new DataPlaneSignalingApiController(sdk);
         }
 
         public void assertDataIsFlowing(String consumerProcessId) {

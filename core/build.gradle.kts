@@ -19,7 +19,6 @@ plugins {
 dependencies {
     implementation(libs.jackson.databind)
     implementation(libs.nimbus.jwt)
-    implementation(libs.jakarta.rsApi)
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)

@@ -24,6 +24,7 @@ import org.eclipse.dataplane.domain.dataflow.DataFlow;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
+import org.eclipse.dataplane.port.DataPlaneSignalingApiController;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -184,7 +185,7 @@ public class ProviderPushTest {
         }
 
         public Object controller() {
-            return sdk.controller();
+            return new DataPlaneSignalingApiController(sdk);
         }
     }
 
@@ -246,7 +247,7 @@ public class ProviderPushTest {
         }
 
         public Object controller() {
-            return sdk.controller();
+            return new DataPlaneSignalingApiController(sdk);
         }
     }
 }

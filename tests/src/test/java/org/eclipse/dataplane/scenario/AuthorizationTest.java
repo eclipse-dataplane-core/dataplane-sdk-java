@@ -21,6 +21,7 @@ import org.eclipse.dataplane.authorization.TestAuthorization;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
+import org.eclipse.dataplane.port.DataPlaneSignalingApiController;
 import org.eclipse.dataplane.port.exception.DataFlowNotifyControlPlaneFailed;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,7 +55,7 @@ public class AuthorizationTest {
 
         controlPlane.initialize(httpServer, "/data-plane", "/data-plane");
 
-        httpServer.deploy("/data-plane", dataPlane.controller());
+        httpServer.deploy("/data-plane", new DataPlaneSignalingApiController(dataPlane));
     }
 
     @AfterEach

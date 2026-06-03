@@ -28,6 +28,7 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
+import org.eclipse.dataplane.port.DataPlaneSignalingApiController;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -175,7 +176,7 @@ class StreamingPullTest {
         }
 
         public Object controller() {
-            return sdk.controller();
+            return new DataPlaneSignalingApiController(sdk);
         }
 
         private Result<DataFlow> onStarted(DataFlow dataFlow) {
@@ -234,7 +235,7 @@ class StreamingPullTest {
         }
 
         public Object controller() {
-            return sdk.controller();
+            return new DataPlaneSignalingApiController(sdk);
         }
 
         private Result<DataFlow> onStart(DataFlow dataFlow) {

@@ -27,9 +27,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
-
 public class Oauth2ClientCredentialsAuthorization implements Authorization {
+
+    private static final String MEDIA_TYPE_APPLICATION_FORM_URLENCODED = "application/x-www-form-urlencoded";
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -57,7 +57,7 @@ public class Oauth2ClientCredentialsAuthorization implements Authorization {
 
         var request = HttpRequest.newBuilder(URI.create(tokenEndpoint))
                 .POST(HttpRequest.BodyPublishers.ofString(form))
-                .header("Content-Type", APPLICATION_FORM_URLENCODED)
+                .header("Content-Type", MEDIA_TYPE_APPLICATION_FORM_URLENCODED)
                 .build();
 
         try {

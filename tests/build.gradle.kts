@@ -18,7 +18,7 @@ plugins {
 
 dependencies {
     testImplementation(project(":core"))
-    testImplementation(project(":web-jersey"))
+    testImplementation(project(":web-jakarta-ee"))
 
     testImplementation(libs.nimbus.jwt)
 

@@ -7,6 +7,6 @@ dependencyResolutionManagement {
 }
 
 include(":core")
-include(":web-jersey")
+include(":web-jakarta-ee")
 
 include(":tests")

@@ -35,6 +35,7 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
 import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
 import org.eclipse.dataplane.domain.registration.Oauth2ClientCredentialsAuthorization;
+import org.eclipse.dataplane.port.DataPlaneSignalingApiController;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,7 +77,7 @@ public class AuthorizationOauth2Test {
 
         controlPlane.initialize(httpServer, "/data-plane", "/data-plane");
 
-        httpServer.deploy("/data-plane", dataPlane.controller());
+        httpServer.deploy("/data-plane", new DataPlaneSignalingApiController(dataPlane));
         httpServer.deploy("/oauth2", new Oauth2TokenController(clientId, clientSecret));
     }
 

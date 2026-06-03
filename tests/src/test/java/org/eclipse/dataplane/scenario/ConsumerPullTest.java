@@ -25,6 +25,7 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
+import org.eclipse.dataplane.port.DataPlaneSignalingApiController;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -138,7 +139,7 @@ class ConsumerPullTest {
         }
 
         public Object controller() {
-            return sdk.controller();
+            return new DataPlaneSignalingApiController(sdk);
         }
 
         private Result<DataFlow> onStarted(DataFlow dataFlow) {
@@ -170,7 +171,7 @@ class ConsumerPullTest {
         }
 
         public Object controller() {
-            return sdk.controller();
+            return new DataPlaneSignalingApiController(sdk);
         }
 
         public void completeStartup(String dataFlowId) {

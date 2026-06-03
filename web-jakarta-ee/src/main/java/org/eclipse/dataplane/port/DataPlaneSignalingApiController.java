@@ -35,9 +35,6 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
-import org.eclipse.dataplane.domain.registration.Authorization;
-
-import java.util.Map;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.MediaType.WILDCARD;
@@ -48,17 +45,15 @@ import static jakarta.ws.rs.core.MediaType.WILDCARD;
 public class DataPlaneSignalingApiController {
 
     private final Dataplane dataplane;
-    private final Map<String, Authorization> authorizations;
 
-    public DataPlaneSignalingApiController(Dataplane dataplane, Map<String, Authorization> authorizations) {
+    public DataPlaneSignalingApiController(Dataplane dataplane) {
         this.dataplane = dataplane;
-        this.authorizations = authorizations;
     }
 
     @POST
     @Path("/prepare")
     public Response prepare(DataFlowPrepareMessage message, @Context ContainerRequestContext requestContext) {
-        var response = extractControlplaneId(requestContext)
+        var response = extractAuthHeader(requestContext)
                 .compose(controlplaneId -> dataplane.prepare(controlplaneId, message))
                 .orElseThrow(ExceptionMapper.MAP_TO_WSRS);
 
@@ -71,7 +66,7 @@ public class DataPlaneSignalingApiController {
     @POST
     @Path("/start")
     public Response start(DataFlowStartMessage message, @Context ContainerRequestContext requestContext) {
-        var response = extractControlplaneId(requestContext)
+        var response = extractAuthHeader(requestContext)
                 .compose(controlplaneId -> dataplane.start(controlplaneId, message))
                 .orElseThrow(ExceptionMapper.MAP_TO_WSRS);
 
@@ -124,15 +119,12 @@ public class DataPlaneSignalingApiController {
         return dataplane.status(flowId).orElseThrow(ExceptionMapper.MAP_TO_WSRS);
     }
 
-    private Result<String> extractControlplaneId(ContainerRequestContext requestContext) {
+    private Result<String> extractAuthHeader(ContainerRequestContext requestContext) {
         var authorizationHeader = requestContext.getHeaderString("Authorization");
         if (authorizationHeader == null) {
             return Result.failure(new NotAuthorizedException("Authorization header missing"));
         }
-        return authorizations.values().stream()
-                .map(authorization -> authorization.extractCallerId(authorizationHeader))
-                .filter(Result::succeeded).findFirst()
-                .orElseGet(() -> Result.failure(new NotAuthorizedException("Authorization method not recognized")));
-    }
 
+        return Result.success(authorizationHeader);
+    }
 }

@@ -9,6 +9,7 @@
  *
  *  Contributors:
  *       Think-it GmbH - initial API and implementation
+ *       Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V. - move Jakarta to separate module
  *
  */
 
@@ -21,6 +22,7 @@ import jakarta.ws.rs.WebApplicationException;
 import org.eclipse.dataplane.port.exception.AuthorizationNotSupported;
 import org.eclipse.dataplane.port.exception.ControlPlaneNotRegistered;
 import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
+import org.eclipse.dataplane.port.exception.UnauthorizedException;
 
 import java.util.function.Function;
 
@@ -41,6 +43,10 @@ public interface ExceptionMapper {
 
         if (exception instanceof AuthorizationNotSupported) {
             return new BadRequestException(exception);
+        }
+
+        if (exception instanceof UnauthorizedException unauthorized) {
+            return new NotAuthorizedException(unauthorized);
         }
 
         return new WebApplicationException("unexpected internal server error");

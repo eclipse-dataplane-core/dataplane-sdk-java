@@ -17,7 +17,7 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.jersey.servlet)
-    implementation(libs.jersey.hk2)
-    implementation(libs.jersey.jackson)
+    implementation(project(":core"))
+
+    implementation(libs.jakarta.rsApi)
 }
