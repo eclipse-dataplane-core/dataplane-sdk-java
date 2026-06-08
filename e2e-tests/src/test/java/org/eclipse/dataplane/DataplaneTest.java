@@ -18,8 +18,6 @@ package org.eclipse.dataplane;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
-import org.eclipse.dataplane.domain.registration.Authorization;
-import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
 import org.eclipse.dataplane.port.exception.DataFlowNotifyControlPlaneFailed;
 import org.eclipse.dataplane.port.exception.DataplaneNotRegistered;
@@ -66,9 +64,7 @@ class DataplaneTest {
 
         @Test
         void shouldFail_whenDataFlowDoesNotExist() {
-            var dataplane = Dataplane.newInstance()
-                    .registerAuthorization(authorization())
-                    .build();
+            var dataplane = Dataplane.newInstance().build();
 
             var result = dataplane.notifyCompleted("dataFlowId");
 
@@ -78,12 +74,9 @@ class DataplaneTest {
 
         @Test
         void shouldReturnFailedFuture_whenControlPlaneIsNotAvailable() {
-            var dataplane = Dataplane.newInstance()
-                    .registerAuthorization(authorization())
-                    .onPrepare(Result::success)
-                    .build();
+            var dataplane = Dataplane.newInstance().onPrepare(Result::success).build();
             dataplane.registerControlPlane(new ControlPlaneRegistrationMessage("controlplaneId", URI.create("http://localhost/any")));
-            dataplane.prepare("auth", createPrepareMessage());
+            dataplane.prepare("controlplaneId", createPrepareMessage());
             controlPlane.stop();
 
             var result = dataplane.notifyCompleted("dataFlowId");
@@ -96,12 +89,9 @@ class DataplaneTest {
         void shouldReturnFailedFuture_whenControlPlaneRespondWithError() {
             controlPlane.stubFor(post(anyUrl()).willReturn(aResponse().withStatus(500)));
 
-            var dataplane = Dataplane.newInstance()
-                    .registerAuthorization(authorization())
-                    .onPrepare(Result::success)
-                    .build();
+            var dataplane = Dataplane.newInstance().onPrepare(Result::success).build();
             dataplane.registerControlPlane(new ControlPlaneRegistrationMessage("controlplaneId", URI.create("http://localhost/any")));
-            dataplane.prepare("auth", createPrepareMessage());
+            dataplane.prepare("controlplaneId", createPrepareMessage());
 
             var result = dataplane.notifyCompleted("dataFlowId");
 
@@ -113,12 +103,9 @@ class DataplaneTest {
         @Test
         void shouldTransitionToCompleted_whenControlPlaneRespondCorrectly() {
             controlPlane.stubFor(post(anyUrl()).willReturn(aResponse().withStatus(200)));
-            var dataplane = Dataplane.newInstance()
-                    .registerAuthorization(authorization())
-                    .onPrepare(Result::success)
-                    .build();
+            var dataplane = Dataplane.newInstance().onPrepare(Result::success).build();
             dataplane.registerControlPlane(new ControlPlaneRegistrationMessage("controlplaneId", URI.create("http://localhost/any")));
-            dataplane.prepare("auth", createPrepareMessage());
+            dataplane.prepare("controlplaneId", createPrepareMessage());
 
             var result = dataplane.notifyCompleted("dataFlowId");
 
@@ -131,9 +118,7 @@ class DataplaneTest {
     class NotifyErrored {
         @Test
         void shouldFail_whenDataFlowDoesNotExist() {
-            var dataplane = Dataplane.newInstance()
-                    .registerAuthorization(authorization())
-                    .build();
+            var dataplane = Dataplane.newInstance().build();
 
             var result = dataplane.notifyErrored("dataFlowId", new RuntimeException("some-error"));
 
@@ -144,13 +129,9 @@ class DataplaneTest {
         @Test
         void shouldSendDataFlowStatusMessage_whenDataFlowIsErrored() {
             controlPlane.stubFor(post(anyUrl()).willReturn(aResponse().withStatus(200)));
-            var dataplane = Dataplane.newInstance()
-                    .id("dataplane-id")
-                    .registerAuthorization(authorization())
-                    .onPrepare(Result::success)
-                    .build();
+            var dataplane = Dataplane.newInstance().id("dataplane-id").onPrepare(Result::success).build();
             dataplane.registerControlPlane(new ControlPlaneRegistrationMessage("controlplaneId", URI.create("http://localhost/any")));
-            dataplane.prepare("auth", createPrepareMessage());
+            dataplane.prepare("controlplaneId", createPrepareMessage());
 
             var result = dataplane.notifyErrored("dataFlowId", new RuntimeException("some-error"));
 
@@ -214,24 +195,5 @@ class DataplaneTest {
 
     private DataFlowPrepareMessage createPrepareMessage() {
         return MessageFactory.createPrepareMessage("dataFlowId", URI.create(controlPlane.baseUrl()), "Something-PUSH");
-    }
-
-    private Authorization authorization() {
-        return new Authorization() {
-            @Override
-            public String type() {
-                return "test";
-            }
-
-            @Override
-            public Result<String> authorizationHeader(AuthorizationProfile profile) {
-                return Result.success("Bearer 1234");
-            }
-
-            @Override
-            public Result<String> extractCallerId(String authorizationHeader) {
-                return Result.success("controlplaneId");
-            }
-        };
     }
 }

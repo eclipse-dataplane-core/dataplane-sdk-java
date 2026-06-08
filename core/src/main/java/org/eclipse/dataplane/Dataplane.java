@@ -91,10 +91,6 @@ public class Dataplane {
         return new Builder();
     }
 
-    public Map<String, Authorization> authorizations() {
-        return authorizations;
-    }
-
     public Result<DataFlow> getById(String dataFlowId) {
         return dataFlowStore.findById(dataFlowId);
     }
@@ -115,13 +111,7 @@ public class Dataplane {
         return Result.failure(new ControlPlaneNotRegistered(controlplaneId));
     }
 
-    public Result<DataFlowStatusMessage> prepare(String authorization, DataFlowPrepareMessage message) {
-        var controlPlaneIdResult = extractControlPlaneId(authorization);
-        if (controlPlaneIdResult.failed()) {
-            return Result.failure(controlPlaneIdResult.getException());
-        }
-        var controlPlaneId = controlPlaneIdResult.getContent();
-
+    public Result<DataFlowStatusMessage> prepare(String controlplaneId, DataFlowPrepareMessage message) {
         var initialDataFlow = DataFlow.newInstance()
                 .id(message.processId())
                 .state(DataFlow.State.INITIATING)
@@ -134,11 +124,11 @@ public class Dataplane {
                 .participantId(message.participantId())
                 .counterPartyId(message.counterPartyId())
                 .dataspaceContext(message.dataspaceContext())
-                .controlplaneId(controlPlaneId)
+                .controlplaneId(controlplaneId)
                 .type(DataFlow.Type.CONSUMER)
                 .build();
 
-        return checkControlPlane(controlPlaneId)
+        return checkControlPlane(controlplaneId)
                 .compose(v -> onPrepare.action(initialDataFlow))
                 .compose(dataFlow -> {
                     if (dataFlow.isInitiating()) {
@@ -157,13 +147,7 @@ public class Dataplane {
     }
 
 
-    public Result<DataFlowStatusMessage> start(String authorization, DataFlowStartMessage message) {
-        var controlPlaneIdResult = extractControlPlaneId(authorization);
-        if (controlPlaneIdResult.failed()) {
-            return Result.failure(controlPlaneIdResult.getException());
-        }
-        var controlPlaneId = controlPlaneIdResult.getContent();
-
+    public Result<DataFlowStatusMessage> start(String controlplaneId, DataFlowStartMessage message) {
         var initialDataFlow = DataFlow.newInstance()
                 .id(message.processId())
                 .state(DataFlow.State.INITIATING)
@@ -175,11 +159,11 @@ public class Dataplane {
                 .participantId(message.participantId())
                 .counterPartyId(message.counterPartyId())
                 .dataspaceContext(message.dataspaceContext())
-                .controlplaneId(controlPlaneId)
+                .controlplaneId(controlplaneId)
                 .type(DataFlow.Type.PROVIDER)
                 .build();
 
-        return checkControlPlane(controlPlaneId)
+        return checkControlPlane(controlplaneId)
                 .compose(v -> onStart.action(initialDataFlow))
                 .compose(dataFlow -> {
                     if (dataFlow.isInitiating()) {
@@ -330,6 +314,13 @@ public class Dataplane {
                 });
     }
 
+    public Result<String> extractControlplaneId(String authorizationHeader) {
+        return authorizations.values().stream()
+                .map(authorization -> authorization.extractCallerId(authorizationHeader))
+                .filter(Result::succeeded).findFirst()
+                .orElseGet(() -> Result.failure(new UnauthorizedException("Authorization method not recognized")));
+    }
+
     public Result<Void> registerOn(String controlPlaneEndpoint) {
 
         var message = new DataPlaneRegistrationMessage(id, endpoint, transferTypes, labels);
@@ -399,13 +390,6 @@ public class Dataplane {
         } catch (JsonProcessingException e) {
             return Result.failure(e);
         }
-    }
-
-    private Result<String> extractControlPlaneId(String authorizationHeader) {
-        return authorizations.values().stream()
-                .map(authorization -> authorization.extractCallerId(authorizationHeader))
-                .filter(Result::succeeded).findFirst()
-                .orElseGet(() -> Result.failure(new UnauthorizedException("Authorization method not recognized")));
     }
 
     public ControlPlaneStore controlPlaneStore() {

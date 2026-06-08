@@ -36,6 +36,7 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 
+import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static jakarta.ws.rs.core.MediaType.WILDCARD;
 
@@ -53,7 +54,7 @@ public class DataPlaneSignalingApiController {
     @POST
     @Path("/prepare")
     public Response prepare(DataFlowPrepareMessage message, @Context ContainerRequestContext requestContext) {
-        var response = extractAuthHeader(requestContext)
+        var response = extractControlplaneId(requestContext)
                 .compose(controlplaneId -> dataplane.prepare(controlplaneId, message))
                 .orElseThrow(ExceptionMapper.MAP_TO_WSRS);
 
@@ -66,7 +67,7 @@ public class DataPlaneSignalingApiController {
     @POST
     @Path("/start")
     public Response start(DataFlowStartMessage message, @Context ContainerRequestContext requestContext) {
-        var response = extractAuthHeader(requestContext)
+        var response = extractControlplaneId(requestContext)
                 .compose(controlplaneId -> dataplane.start(controlplaneId, message))
                 .orElseThrow(ExceptionMapper.MAP_TO_WSRS);
 
@@ -119,12 +120,12 @@ public class DataPlaneSignalingApiController {
         return dataplane.status(flowId).orElseThrow(ExceptionMapper.MAP_TO_WSRS);
     }
 
-    private Result<String> extractAuthHeader(ContainerRequestContext requestContext) {
-        var authorizationHeader = requestContext.getHeaderString("Authorization");
+    private Result<String> extractControlplaneId(ContainerRequestContext requestContext) {
+        var authorizationHeader = requestContext.getHeaderString(AUTHORIZATION);
         if (authorizationHeader == null) {
             return Result.failure(new NotAuthorizedException("Authorization header missing"));
         }
 
-        return Result.success(authorizationHeader);
+        return dataplane.extractControlplaneId(authorizationHeader);
     }
 }
