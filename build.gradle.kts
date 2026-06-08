@@ -11,40 +11,44 @@ group = "org.eclipse.dataplane-core"
 version = "0.0.11-SNAPSHOT"
 
 subprojects {
+    apply(plugin = "signing")
+    apply(plugin = "maven-publish")
+    apply(plugin = "com.vanniktech.maven.publish")
+
     tasks.withType<Test>().configureEach {
         useJUnitPlatform()
     }
-}
 
-signing {
-    useGpgCmd()
-    sign(publishing.publications)
-}
+    signing {
+        useGpgCmd()
+        sign(publishing.publications)
+    }
 
-mavenPublishing {
-    publishToMavenCentral(true)
+    mavenPublishing {
+        publishToMavenCentral(true)
 
-    signAllPublications()
+        signAllPublications()
 
-    pom {
-        name.set(project.name)
-        description.set("Dataplane Signaling SDK library")
-        url.set("https://github.com/eclipse-dataplane-core/dataplane-sdk-java")
-        licenses {
-            license {
-                name.set("The Apache License, Version 2.0")
-                url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
-            }
-        }
-        developers {
-            developer {
-                name = "Dataplane Core Dev"
-                email = "dataplane-core-dev@eclipse.org"
-            }
-        }
-        scm {
+        pom {
+            name.set(project.name)
+            description.set("Dataplane Signaling SDK library")
             url.set("https://github.com/eclipse-dataplane-core/dataplane-sdk-java")
-            connection.set("scm:git:git@github.com:eclipse-dataplane-core/dataplane-sdk-java.git")
+            licenses {
+                license {
+                    name.set("The Apache License, Version 2.0")
+                    url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                }
+            }
+            developers {
+                developer {
+                    name = "Dataplane Core Dev"
+                    email = "dataplane-core-dev@eclipse.org"
+                }
+            }
+            scm {
+                url.set("https://github.com/eclipse-dataplane-core/dataplane-sdk-java")
+                connection.set("scm:git:git@github.com:eclipse-dataplane-core/dataplane-sdk-java.git")
+            }
         }
     }
 }

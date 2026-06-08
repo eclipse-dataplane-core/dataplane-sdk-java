@@ -9,4 +9,4 @@ dependencyResolutionManagement {
 include(":core")
 include(":web-jakarta-ee")
 
-include(":tests")
+include(":e2e-tests")
