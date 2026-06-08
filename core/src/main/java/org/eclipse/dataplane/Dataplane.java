@@ -63,11 +63,10 @@ import java.util.Set;
 import java.util.UUID;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 import static java.util.Collections.emptyMap;
 
 public class Dataplane {
-
-    private static final String AUTHORIZATION_HEADER = "Authorization";
 
     private final ObjectMapper objectMapper = new ObjectMapper().configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
     private DataFlowStore dataFlowStore = new InMemoryDataFlowStore(objectMapper);
@@ -380,7 +379,7 @@ public class Dataplane {
                                 }
                                 return Result.failure(new ResourceNotFoundException("ControlPlane has no authorization"));
                             })
-                            .onSuccess(authorizationHeader -> requestBuilder.header(AUTHORIZATION_HEADER, authorizationHeader));
+                            .onSuccess(authorizationHeader -> requestBuilder.header(AUTHORIZATION, authorizationHeader));
 
                     return httpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.discarding());
                 })

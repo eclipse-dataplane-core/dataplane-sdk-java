@@ -20,6 +20,8 @@ dependencies {
     implementation(libs.jackson.databind)
     implementation(libs.nimbus.jwt)
 
+    compileOnly(libs.jakarta.rsApi)
+
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)
