@@ -132,11 +132,11 @@ public class DataFlow {
     }
 
     public boolean isPush() {
-        return transferType.substring(transferType.lastIndexOf('-') + 1).equalsIgnoreCase("push");
+        return transferTypeLastToken().equalsIgnoreCase("push");
     }
 
     public boolean isPull() {
-        return !isPush();
+        return transferTypeLastToken().equalsIgnoreCase("pull");
     }
 
     public boolean isInitiating() {
@@ -167,8 +167,12 @@ public class DataFlow {
         return type;
     }
 
+    private String transferTypeLastToken() {
+        return transferType.substring(transferType.lastIndexOf('-') + 1);
+    }
+
     public enum Type {
-        PROVIDER, CONSUMER
+        PROVIDER, CONSUMER;
     }
 
     public static class Builder {
