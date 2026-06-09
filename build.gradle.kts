@@ -7,9 +7,6 @@ plugins {
     id("com.vanniktech.maven.publish") version "0.36.0"
 }
 
-group = "org.eclipse.dataplane-core"
-version = "0.0.12-SNAPSHOT"
-
 subprojects {
     apply(plugin = "signing")
     apply(plugin = "maven-publish")
