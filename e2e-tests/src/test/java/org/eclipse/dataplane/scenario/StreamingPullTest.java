@@ -1,0 +1,273 @@
+/*
+ *  Copyright (c) 2025 Think-it GmbH
+ *
+ *  This program and the accompanying materials are made available under the
+ *  terms of the Apache License, Version 2.0 which is available at
+ *  https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  SPDX-License-Identifier: Apache-2.0
+ *
+ *  Contributors:
+ *       Think-it GmbH - initial API and implementation
+ *       Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V. - resume endpoint
+ *
+ */
+
+package org.eclipse.dataplane.scenario;
+
+import org.eclipse.dataplane.ControlPlane;
+import org.eclipse.dataplane.Dataplane;
+import org.eclipse.dataplane.HttpServer;
+import org.eclipse.dataplane.authorization.TestAuthorization;
+import org.eclipse.dataplane.domain.DataAddress;
+import org.eclipse.dataplane.domain.Result;
+import org.eclipse.dataplane.domain.dataflow.DataFlow;
+import org.eclipse.dataplane.domain.dataflow.DataFlowResumeMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowStartedNotificationMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowStatusMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
+import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
+import org.eclipse.dataplane.port.DataPlaneSignalingApiController;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
+import static java.util.Collections.emptyList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.eclipse.dataplane.MessageFactory.createPrepareMessage;
+import static org.eclipse.dataplane.MessageFactory.createStartMessage;
+import static org.eclipse.dataplane.authorization.TestAuthorization.TOKEN_GENERATOR;
+import static org.eclipse.dataplane.authorization.TestAuthorization.createAuthorizationProfile;
+import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.PREPARED;
+import static org.eclipse.dataplane.domain.dataflow.DataFlow.State.STARTED;
+
+class StreamingPullTest {
+
+    private final HttpServer httpServer = new HttpServer();
+
+    private final ControlPlane controlPlane = ControlPlane.newInstance()
+            .authorizationTokenGenerator(() -> TOKEN_GENERATOR.apply("control-plane-id"))
+            .build();
+    private final ConsumerDataPlane consumerDataPlane = new ConsumerDataPlane();
+    private final ProviderDataPlane providerDataPlane = new ProviderDataPlane();
+
+    @BeforeEach
+    void setUp() {
+        httpServer.start();
+        controlPlane.initialize(httpServer, "/consumer/data-plane", "/provider/data-plane");
+
+        httpServer.deploy("/consumer/data-plane", consumerDataPlane.controller());
+        httpServer.deploy("/provider/data-plane", providerDataPlane.controller());
+    }
+
+    @AfterEach
+    void tearDown() {
+        httpServer.stop();
+    }
+
+    @Test
+    void shouldPullDataFromProvider_thenProviderTerminatesIt() {
+        var transferType = "FileSystemStreaming-PULL";
+        var processId = UUID.randomUUID().toString();
+        var consumerProcessId = "consumer_" + processId;
+        var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
+
+        var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
+        assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());
+        assertThat(prepareResponse.dataAddress()).isNull();
+
+        var providerProcessId = "provider_" + processId;
+        var startMessage = createStartMessage(providerProcessId, controlPlane.providerCallbackAddress(), transferType);
+        var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
+        assertThat(startResponse.state()).isEqualTo(STARTED.name());
+        assertThat(startResponse.dataAddress()).isNotNull();
+
+        controlPlane.consumerStarted(consumerProcessId, new DataFlowStartedNotificationMessage(startResponse.dataAddress())).statusCode(200);
+
+        await().untilAsserted(() -> {
+            assertThat(consumerDataPlane.storage.toFile().listFiles()).hasSizeGreaterThan(20);
+        });
+
+        controlPlane.providerTerminate(providerProcessId, new DataFlowTerminateMessage("a good reason")).statusCode(200);
+
+        consumerDataPlane.assertNoMoreDataIsTransferred();
+    }
+
+    @Test
+    void shouldSuspendAndResumeOnProvider() {
+        var transferType = "FileSystemStreaming-PULL";
+        var processId = UUID.randomUUID().toString();
+        var consumerProcessId = "consumer_" + processId;
+        var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
+
+        var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
+        assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());
+        assertThat(prepareResponse.dataAddress()).isNull();
+
+        var providerProcessId = "provider_" + processId;
+        var startMessage = createStartMessage(providerProcessId, controlPlane.providerCallbackAddress(), transferType);
+        var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
+        assertThat(startResponse.state()).isEqualTo(STARTED.name());
+        assertThat(startResponse.dataAddress()).isNotNull();
+
+        controlPlane.consumerStarted(consumerProcessId, new DataFlowStartedNotificationMessage(startResponse.dataAddress())).statusCode(200);
+
+        consumerDataPlane.assertDataIsFlowing();
+
+        controlPlane.providerSuspend(providerProcessId, new DataFlowSuspendMessage("a reason")).statusCode(200);
+
+        consumerDataPlane.assertNoMoreDataIsTransferred();
+
+        var resumeMessage = resumeMessage(providerProcessId);
+        var providerResumeResponse = controlPlane.providerResume(providerProcessId, resumeMessage)
+                .statusCode(200).extract().as(DataFlowStatusMessage.class);
+        assertThat(providerResumeResponse.dataAddress()).isNotNull();
+        controlPlane.consumerStarted(consumerProcessId, new DataFlowStartedNotificationMessage(providerResumeResponse.dataAddress()))
+                .statusCode(200);
+
+        var consumerResumeResponse = controlPlane.consumerResume(consumerProcessId, resumeMessage(consumerProcessId))
+                .statusCode(200).extract().as(DataFlowStatusMessage.class);
+        assertThat(consumerResumeResponse.dataAddress()).isNull();
+
+        consumerDataPlane.assertDataIsFlowing();
+    }
+
+    private DataFlowResumeMessage resumeMessage(String providerProcessId) {
+        return new DataFlowResumeMessage("theMessageId", providerProcessId, null);
+    }
+
+    private static class ConsumerDataPlane {
+
+        private final Path storage;
+        private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        private final Dataplane sdk = Dataplane.newInstance()
+                .id("consumer")
+                .registerAuthorization(new TestAuthorization())
+                .onPrepare(Result::success)
+                .onStarted(this::onStarted)
+                .onSuspend(Result::success)
+                .onResume(Result::success)
+                .build();
+
+
+        ConsumerDataPlane() {
+            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), createAuthorizationProfile("consumer")));
+            try {
+                storage = Files.createTempDirectory("consumer-storage");
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public Object controller() {
+            return new DataPlaneSignalingApiController(sdk);
+        }
+
+        private Result<DataFlow> onStarted(DataFlow dataFlow) {
+            try {
+                var folder = dataFlow.getDataAddress().endpoint();
+                executor.scheduleAtFixedRate(() -> {
+                    var files = Objects.requireNonNull(new File(folder).listFiles());
+                    for (var listFile : files) {
+                        try {
+                            Files.move(listFile.toPath(), storage.resolve(listFile.getName()));
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }, 0L, 500L, TimeUnit.MILLISECONDS);
+
+                return Result.success(dataFlow);
+            } catch (Exception e) {
+                return Result.failure(e);
+            }
+        }
+
+        public void assertNoMoreDataIsTransferred() {
+            await().untilAsserted(() -> {
+                var filesTransferred = Objects.requireNonNull(storage.toFile().listFiles()).length;
+                Thread.sleep(1000L);
+                assertThat(storage.toFile().listFiles()).hasSize(filesTransferred);
+            });
+        }
+
+        public void assertDataIsFlowing() {
+            for (var file : storage.toFile().listFiles()) {
+                file.delete();
+            }
+            await().untilAsserted(() -> {
+                assertThat(storage.toFile().listFiles()).hasSizeGreaterThan(20);
+            });
+        }
+    }
+
+    private static class ProviderDataPlane {
+
+        private final Dataplane sdk = Dataplane.newInstance()
+                .id("provider")
+                .registerAuthorization(new TestAuthorization())
+                .onStart(this::onStart)
+                .onSuspend(this::stopDataFlow)
+                .onResume(this::onStart)
+                .onTerminate(this::stopDataFlow)
+                .build();
+        private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(5);
+        private final Map<String, ScheduledFuture<?>> flows = new HashMap<>();
+
+        ProviderDataPlane() {
+            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), createAuthorizationProfile("provider")));
+        }
+
+        public Object controller() {
+            return new DataPlaneSignalingApiController(sdk);
+        }
+
+        private Result<DataFlow> onStart(DataFlow dataFlow) {
+            try {
+                var destinationDirectory = Files.createTempDirectory(dataFlow.getId());
+                var flow = executor.scheduleAtFixedRate(() -> {
+                    var path = destinationDirectory.resolve(String.valueOf(UUID.randomUUID().toString()));
+                    try {
+                        Files.writeString(path, UUID.randomUUID().toString());
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }, 0L, 100L, TimeUnit.MILLISECONDS);
+
+                flows.put(dataFlow.getId(), flow);
+
+                var dataAddress = new DataAddress("FileSystem", "directory", destinationDirectory.toString(), emptyList());
+                dataFlow.setDataAddress(dataAddress);
+
+                return Result.success(dataFlow);
+            } catch (IOException e) {
+                return Result.failure(e);
+            }
+        }
+
+        private Result<DataFlow> stopDataFlow(DataFlow dataFlow) {
+            try {
+                flows.get(dataFlow.getId()).cancel(true);
+                return Result.success(dataFlow);
+            } catch (Exception e) {
+                return Result.failure(e);
+            }
+        }
+    }
+}
