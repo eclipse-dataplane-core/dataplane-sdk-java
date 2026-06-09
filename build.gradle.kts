@@ -8,9 +8,6 @@ plugins {
 }
 
 subprojects {
-    group = "org.eclipse.dataplane-core"
-    version = "0.0.12-SNAPSHOT"
-
     apply(plugin = "signing")
     apply(plugin = "maven-publish")
     apply(plugin = "com.vanniktech.maven.publish")
