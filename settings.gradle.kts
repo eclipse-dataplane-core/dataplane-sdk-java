@@ -6,7 +6,7 @@ dependencyResolutionManagement {
     }
 }
 
-include(":core")
-include(":web-jakarta-ee")
+include(":dataplane-sdk-core")
+include(":dataplane-sdk-jakarta-ee")
 
 include(":e2e-tests")

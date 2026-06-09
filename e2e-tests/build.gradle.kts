@@ -17,8 +17,8 @@ plugins {
 }
 
 dependencies {
-    testImplementation(project(":core"))
-    testImplementation(project(":web-jakarta-ee"))
+    testImplementation(project(":dataplane-sdk-core"))
+    testImplementation(project(":dataplane-sdk-jakarta-ee"))
 
     testImplementation(libs.nimbus.jwt)
 
@@ -36,4 +36,12 @@ dependencies {
     testImplementation(libs.jetty.ee10.servlet)
     testImplementation(libs.jetty.server)
     testImplementation(libs.wiremock.jetty12)
+}
+
+tasks.withType<PublishToMavenRepository>().configureEach {
+    enabled = false
+}
+
+tasks.withType<PublishToMavenLocal>().configureEach {
+    enabled = false
 }

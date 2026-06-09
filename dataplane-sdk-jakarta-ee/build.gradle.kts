@@ -17,7 +17,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":core"))
+    implementation(project(":dataplane-sdk-core"))
 
     implementation(libs.jakarta.rsApi)
 }
