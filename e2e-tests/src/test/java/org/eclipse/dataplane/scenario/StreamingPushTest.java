@@ -117,10 +117,10 @@ public class StreamingPushTest {
         assertThat(startResponse.state()).isEqualTo(STARTED.name());
         consumerDataPlane.assertDataIsFlowing(consumerProcessId);
 
-        controlPlane.consumerSuspend(consumerProcessId, new DataFlowSuspendMessage("a reason"))
+        controlPlane.consumerSuspend(consumerProcessId, new DataFlowSuspendMessage(UUID.randomUUID().toString(), "a reason"))
                 .statusCode(200);
 
-        controlPlane.providerSuspend(providerProcessId, new DataFlowSuspendMessage("a reason"))
+        controlPlane.providerSuspend(providerProcessId, new DataFlowSuspendMessage(UUID.randomUUID().toString(), "a reason"))
                 .statusCode(200);
 
         consumerDataPlane.assertNoMoreDataIsTransferred(consumerProcessId);
@@ -205,7 +205,7 @@ public class StreamingPushTest {
         private Result<DataFlow> onPrepare(DataFlow dataFlow) {
             try {
                 var destinationFolder = Files.createTempDirectory("consumer-dest");
-                var dataAddress = new DataAddress("FileSystem", "folder", destinationFolder.toString(), emptyList());
+                var dataAddress = new DataAddress("FileSystem", destinationFolder.toString(), emptyList());
 
                 dataFlow.setDataAddress(dataAddress);
                 destinations.put(dataFlow.getId(), dataAddress);

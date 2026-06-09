@@ -98,13 +98,15 @@ class StreamingPullTest {
         assertThat(startResponse.state()).isEqualTo(STARTED.name());
         assertThat(startResponse.dataAddress()).isNotNull();
 
-        controlPlane.consumerStarted(consumerProcessId, new DataFlowStartedNotificationMessage(startResponse.dataAddress())).statusCode(200);
+        var startedMessage = new DataFlowStartedNotificationMessage(UUID.randomUUID().toString(), startResponse.dataAddress());
+        controlPlane.consumerStarted(consumerProcessId, startedMessage).statusCode(200);
 
         await().untilAsserted(() -> {
             assertThat(consumerDataPlane.storage.toFile().listFiles()).hasSizeGreaterThan(20);
         });
 
-        controlPlane.providerTerminate(providerProcessId, new DataFlowTerminateMessage("a good reason")).statusCode(200);
+        var terminateMessage = new DataFlowTerminateMessage(UUID.randomUUID().toString(), "a good reason");
+        controlPlane.providerTerminate(providerProcessId, terminateMessage).statusCode(200);
 
         consumerDataPlane.assertNoMoreDataIsTransferred();
     }
@@ -126,11 +128,13 @@ class StreamingPullTest {
         assertThat(startResponse.state()).isEqualTo(STARTED.name());
         assertThat(startResponse.dataAddress()).isNotNull();
 
-        controlPlane.consumerStarted(consumerProcessId, new DataFlowStartedNotificationMessage(startResponse.dataAddress())).statusCode(200);
+        var firstStarted = new DataFlowStartedNotificationMessage(UUID.randomUUID().toString(), startResponse.dataAddress());
+        controlPlane.consumerStarted(consumerProcessId, firstStarted).statusCode(200);
 
         consumerDataPlane.assertDataIsFlowing();
 
-        controlPlane.providerSuspend(providerProcessId, new DataFlowSuspendMessage("a reason")).statusCode(200);
+        var suspendMessage = new DataFlowSuspendMessage(UUID.randomUUID().toString(), "a reason");
+        controlPlane.providerSuspend(providerProcessId, suspendMessage).statusCode(200);
 
         consumerDataPlane.assertNoMoreDataIsTransferred();
 
@@ -138,7 +142,8 @@ class StreamingPullTest {
         var providerResumeResponse = controlPlane.providerResume(providerProcessId, resumeMessage)
                 .statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(providerResumeResponse.dataAddress()).isNotNull();
-        controlPlane.consumerStarted(consumerProcessId, new DataFlowStartedNotificationMessage(providerResumeResponse.dataAddress()))
+        var secondStarted = new DataFlowStartedNotificationMessage(UUID.randomUUID().toString(), providerResumeResponse.dataAddress());
+        controlPlane.consumerStarted(consumerProcessId, secondStarted)
                 .statusCode(200);
 
         var consumerResumeResponse = controlPlane.consumerResume(consumerProcessId, resumeMessage(consumerProcessId))
@@ -252,7 +257,7 @@ class StreamingPullTest {
 
                 flows.put(dataFlow.getId(), flow);
 
-                var dataAddress = new DataAddress("FileSystem", "directory", destinationDirectory.toString(), emptyList());
+                var dataAddress = new DataAddress("FileSystem", destinationDirectory.toString(), emptyList());
                 dataFlow.setDataAddress(dataAddress);
 
                 return Result.success(dataFlow);

@@ -132,7 +132,11 @@ public class DataFlow {
     }
 
     public boolean isPush() {
-        return transferType.split("-")[1].equalsIgnoreCase("PUSH");
+        return transferTypeLastToken().equalsIgnoreCase("push");
+    }
+
+    public boolean isPull() {
+        return transferTypeLastToken().equalsIgnoreCase("pull");
     }
 
     public boolean isInitiating() {
@@ -145,10 +149,6 @@ public class DataFlow {
 
     public boolean isStarted() {
         return state == State.STARTED;
-    }
-
-    public boolean isPull() {
-        return transferType.split("-")[1].equalsIgnoreCase("PULL");
     }
 
     public void setDataAddress(DataAddress dataAddress) {
@@ -167,8 +167,12 @@ public class DataFlow {
         return type;
     }
 
+    private String transferTypeLastToken() {
+        return transferType.substring(transferType.lastIndexOf('-') + 1);
+    }
+
     public enum Type {
-        PROVIDER, CONSUMER
+        PROVIDER, CONSUMER;
     }
 
     public static class Builder {

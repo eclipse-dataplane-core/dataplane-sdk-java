@@ -14,6 +14,7 @@ nimbusJoseJwt = "10.9"
 postgresql = "42.7.11"
 restAssured = "6.0.0"
 slf4j = "2.0.18"
+tck-dps = "1.1.0"
 testcontainers = "2.0.5"
 wiremock = "3.13.2"
 
@@ -35,10 +36,11 @@ restAssured = { module = "io.rest-assured:rest-assured", version.ref = "restAssu
 assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
 awaitility = { module = "org.awaitility:awaitility", version.ref = "awaitility" }
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
-
+parsson = { module = "org.eclipse.parsson:parsson", version = "1.1.9" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
+tck-dps = { module = "org.eclipse.dataspacetck.dps:dps-tck", version.ref = "tck-dps" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter", version.ref = "testcontainers" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
-postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 
 jetty-ee10-servlet = { module = "org.eclipse.jetty.ee10:jetty-ee10-servlet", version.ref = "jetty" }
 jetty-server = { module = "org.eclipse.jetty:jetty-server", version.ref = "jetty" }

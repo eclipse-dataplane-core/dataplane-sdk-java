@@ -15,6 +15,7 @@
 package org.eclipse.dataplane.domain.dataflow;
 
 public record DataFlowTerminateMessage(
+        String messageId,
         String reason
 ) {
 }

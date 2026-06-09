@@ -32,6 +32,7 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 
 import java.net.URI;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Predicate;
@@ -174,7 +175,8 @@ public class ControlPlane {
             }
             executor.submit(() -> {
                 var idPart = transferId.split("_")[1];
-                counterPart.terminate("consumer_" + idPart, new DataFlowTerminateMessage("terminated by provider")).statusCode(200);
+                var message = new DataFlowTerminateMessage(UUID.randomUUID().toString(), "terminated by provider");
+                counterPart.terminate("consumer_" + idPart, message).statusCode(200);
             });
         }
 

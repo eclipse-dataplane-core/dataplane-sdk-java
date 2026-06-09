@@ -22,19 +22,20 @@ dependencies {
 
     testImplementation(libs.nimbus.jwt)
 
-    testImplementation(platform(libs.junit.bom))
-    testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)
-    testImplementation(libs.restAssured)
+    testImplementation(platform(libs.junit.bom))
     testImplementation(libs.assertJ)
     testImplementation(libs.awaitility)
-
     testImplementation(libs.jakarta.rsApi)
-    testImplementation(libs.jersey.servlet)
     testImplementation(libs.jersey.hk2)
     testImplementation(libs.jersey.jackson)
+    testImplementation(libs.jersey.servlet)
     testImplementation(libs.jetty.ee10.servlet)
     testImplementation(libs.jetty.server)
+    testImplementation(libs.junit.jupiter)
+    testImplementation(libs.parsson)
+    testImplementation(libs.restAssured)
+    testImplementation(libs.tck.dps)
     testImplementation(libs.wiremock.jetty12)
 }
 

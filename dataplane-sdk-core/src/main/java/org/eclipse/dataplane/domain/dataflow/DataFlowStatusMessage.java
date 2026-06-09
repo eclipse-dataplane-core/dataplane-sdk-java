@@ -17,10 +17,16 @@ package org.eclipse.dataplane.domain.dataflow;
 
 import org.eclipse.dataplane.domain.DataAddress;
 
+import java.util.UUID;
+
 public record DataFlowStatusMessage(
+        String messageId,
         String dataFlowId,
         String state,
         DataAddress dataAddress,
         String error
 ) {
+    public DataFlowStatusMessage(String dataFlowId, String state, DataAddress dataAddress, String error) {
+        this(UUID.randomUUID().toString(), dataFlowId, state, dataAddress, error);
+    }
 }
