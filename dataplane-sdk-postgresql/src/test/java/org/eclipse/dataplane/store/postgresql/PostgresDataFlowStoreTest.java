@@ -12,15 +12,15 @@
  *
  */
 
-package org.eclipse.dataplane.store.sql;
+package org.eclipse.dataplane.store.postgresql;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.dataplane.port.store.ControlPlaneStore;
-import org.eclipse.dataplane.port.store.sql.PostgresControlPlaneStore;
-import org.eclipse.dataplane.store.ControlPlaneStoreTestBase;
+import org.eclipse.dataplane.port.store.DataFlowStore;
+import org.eclipse.dataplane.store.DataFlowStoreTestBase;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.postgresql.ds.PGSimpleDataSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -28,7 +28,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
 @Testcontainers
-class PostgresControlPlaneStoreTest extends ControlPlaneStoreTestBase {
+class PostgresDataFlowStoreTest extends DataFlowStoreTestBase {
 
     private static final String POSTGRES_IMAGE = "postgres:18.3";
     private static final String DATABASE = "dataplane";
@@ -36,14 +36,14 @@ class PostgresControlPlaneStoreTest extends ControlPlaneStoreTestBase {
     private static final String PASSWORD = "password";
 
     private final ObjectMapper mapper = new ObjectMapper().configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
-    private PostgresControlPlaneStore store;
+    private PostgresDataFlowStore store;
 
     @Container
     static PostgreSQLContainer postgres = new PostgreSQLContainer(POSTGRES_IMAGE)
             .withDatabaseName(DATABASE)
             .withUsername(USERNAME)
             .withPassword(PASSWORD)
-            .withInitScript("sql/control_plane_schema.sql");
+            .withInitScript("sql/data_flow_schema.sql");
 
     @BeforeAll
     static void init() {
@@ -58,11 +58,15 @@ class PostgresControlPlaneStoreTest extends ControlPlaneStoreTestBase {
 
     @BeforeEach
     void initStore() {
-        store = new PostgresControlPlaneStore(mapper, postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+        var dataSource = new PGSimpleDataSource();
+        dataSource.setUrl(postgres.getJdbcUrl());
+        dataSource.setUser(postgres.getUsername());
+        dataSource.setPassword(postgres.getPassword());
+        store = new PostgresDataFlowStore(mapper, dataSource);
     }
 
     @Override
-    protected ControlPlaneStore store() {
+    protected DataFlowStore store() {
         return store;
     }
 }

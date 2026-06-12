@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.dataplane.port.store.sql;
+package org.eclipse.dataplane.store.postgresql;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,13 +24,14 @@ import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
 import org.eclipse.dataplane.port.store.DataFlowStore;
 
 import java.net.URI;
+import javax.sql.DataSource;
 
 import static java.lang.String.format;
 
 public class PostgresDataFlowStore extends AbstractSqlStore implements DataFlowStore {
 
-    public PostgresDataFlowStore(ObjectMapper objectMapper, String databaseUrl, String databaseUsername, String databasePassword) {
-        super(objectMapper, databaseUrl, databaseUsername, databasePassword);
+    public PostgresDataFlowStore(ObjectMapper objectMapper, DataSource dataSource) {
+        super(objectMapper, dataSource);
     }
 
     @Override

@@ -14,22 +14,19 @@
 
 plugins {
     `java-library`
-    `java-test-fixtures`
 }
 
 dependencies {
-    implementation(libs.jackson.databind)
-    implementation(libs.nimbus.jwt)
+    implementation(project(":dataplane-sdk-core"))
 
-    compileOnly(libs.jakarta.rsApi)
+    implementation(libs.jackson.databind)
+
+    testImplementation(testFixtures(project(":dataplane-sdk-core")))
 
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.launcher)
-    testImplementation(libs.assertJ)
-    testImplementation(libs.mockito.core)
-    testImplementation(libs.slf4j.simple)
-
-    testFixturesImplementation(libs.junit.jupiter)
-    testFixturesImplementation(libs.assertJ)
+    testImplementation(libs.testcontainers.junit.jupiter)
+    testImplementation(libs.testcontainers.postgresql)
+    testImplementation(libs.postgresql)
 }

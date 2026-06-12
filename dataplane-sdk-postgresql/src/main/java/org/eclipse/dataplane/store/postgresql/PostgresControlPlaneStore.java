@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.dataplane.port.store.sql;
+package org.eclipse.dataplane.store.postgresql;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.domain.Result;
@@ -23,13 +23,14 @@ import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
 import org.eclipse.dataplane.port.store.ControlPlaneStore;
 
 import java.net.URI;
+import javax.sql.DataSource;
 
 import static java.lang.String.format;
 
 public class PostgresControlPlaneStore extends AbstractSqlStore implements ControlPlaneStore {
 
-    public PostgresControlPlaneStore(ObjectMapper objectMapper, String databaseUrl, String databaseUsername, String databasePassword) {
-        super(objectMapper, databaseUrl, databaseUsername, databasePassword);
+    public PostgresControlPlaneStore(ObjectMapper objectMapper, DataSource dataSource) {
+        super(objectMapper, dataSource);
     }
 
     @Override

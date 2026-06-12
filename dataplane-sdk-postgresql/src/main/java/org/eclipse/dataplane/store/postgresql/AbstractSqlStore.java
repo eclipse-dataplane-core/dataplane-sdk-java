@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.dataplane.port.store.sql;
+package org.eclipse.dataplane.store.postgresql;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.port.exception.PersistenceException;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
+import javax.sql.DataSource;
 
 /**
  * Base class for SQL-based store implementations that provides methods for common functionality
@@ -31,20 +31,16 @@ public abstract class AbstractSqlStore {
 
     protected ObjectMapper objectMapper;
 
-    private final String databaseUrl;
-    private final String databaseUsername;
-    private final String databasePassword;
+    private final DataSource dataSource;
 
-    public AbstractSqlStore(ObjectMapper objectMapper, String databaseUrl, String databaseUsername, String databasePassword) {
+    public AbstractSqlStore(ObjectMapper objectMapper, DataSource dataSource) {
         this.objectMapper = objectMapper;
-        this.databaseUrl = databaseUrl;
-        this.databaseUsername = databaseUsername;
-        this.databasePassword = databasePassword;
+        this.dataSource = dataSource;
     }
 
     protected Connection getConnection() {
         try {
-            return DriverManager.getConnection(databaseUrl, databaseUsername, databasePassword);
+            return dataSource.getConnection();
         } catch (Exception e) {
             throw new PersistenceException("Failed to connect to database.", e);
         }
