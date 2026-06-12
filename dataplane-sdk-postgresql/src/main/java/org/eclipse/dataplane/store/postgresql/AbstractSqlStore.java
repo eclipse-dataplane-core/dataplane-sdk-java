@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.dataplane.port.store.sql;
+package org.eclipse.dataplane.store.postgresql;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;

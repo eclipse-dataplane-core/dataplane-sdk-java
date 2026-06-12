@@ -12,11 +12,10 @@
  *
  */
 
-package org.eclipse.dataplane.store.sql;
+package org.eclipse.dataplane.store.postgresql;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.port.store.DataFlowStore;
-import org.eclipse.dataplane.port.store.sql.PostgresDataFlowStore;
 import org.eclipse.dataplane.store.DataFlowStoreTestBase;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

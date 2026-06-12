@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.dataplane.port.store.sql;
+package org.eclipse.dataplane.store.postgresql;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.domain.Result;
@@ -44,7 +44,7 @@ public class PostgresControlPlaneStore extends AbstractSqlStore implements Contr
             statement.executeUpdate();
             return Result.success();
         } catch (Exception e) {
-            return Result.failure(new PersistenceException(format("Failed to persist ControlPlane with id %s.", controlPlane.getId()), e));
+            return Result.failure(new PersistenceException(String.format("Failed to persist ControlPlane with id %s.", controlPlane.getId()), e));
         } finally {
             closeConnection(connection);
         }

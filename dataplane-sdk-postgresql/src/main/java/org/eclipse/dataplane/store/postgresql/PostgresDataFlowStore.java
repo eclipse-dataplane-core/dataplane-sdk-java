@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.dataplane.port.store.sql;
+package org.eclipse.dataplane.store.postgresql;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -58,7 +58,7 @@ public class PostgresDataFlowStore extends AbstractSqlStore implements DataFlowS
             statement.executeUpdate();
             return Result.success();
         } catch (Exception e) {
-            return Result.failure(new PersistenceException(format("Failed to persist DataFlow with id %s.", dataFlow.getId()), e));
+            return Result.failure(new PersistenceException(String.format("Failed to persist DataFlow with id %s.", dataFlow.getId()), e));
         } finally {
             closeConnection(connection);
         }
