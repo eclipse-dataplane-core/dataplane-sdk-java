@@ -24,13 +24,14 @@ import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
 import org.eclipse.dataplane.port.store.DataFlowStore;
 
 import java.net.URI;
+import javax.sql.DataSource;
 
 import static java.lang.String.format;
 
 public class PostgresDataFlowStore extends AbstractSqlStore implements DataFlowStore {
 
-    public PostgresDataFlowStore(ObjectMapper objectMapper, String databaseUrl, String databaseUsername, String databasePassword) {
-        super(objectMapper, databaseUrl, databaseUsername, databasePassword);
+    public PostgresDataFlowStore(ObjectMapper objectMapper, DataSource dataSource) {
+        super(objectMapper, dataSource);
     }
 
     @Override
@@ -58,7 +59,7 @@ public class PostgresDataFlowStore extends AbstractSqlStore implements DataFlowS
             statement.executeUpdate();
             return Result.success();
         } catch (Exception e) {
-            return Result.failure(new PersistenceException(String.format("Failed to persist DataFlow with id %s.", dataFlow.getId()), e));
+            return Result.failure(new PersistenceException(format("Failed to persist DataFlow with id %s.", dataFlow.getId()), e));
         } finally {
             closeConnection(connection);
         }

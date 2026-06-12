@@ -20,6 +20,7 @@ import org.eclipse.dataplane.store.DataFlowStoreTestBase;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.postgresql.ds.PGSimpleDataSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -57,7 +58,11 @@ class PostgresDataFlowStoreTest extends DataFlowStoreTestBase {
 
     @BeforeEach
     void initStore() {
-        store = new PostgresDataFlowStore(mapper, postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
+        var dataSource = new PGSimpleDataSource();
+        dataSource.setUrl(postgres.getJdbcUrl());
+        dataSource.setUser(postgres.getUsername());
+        dataSource.setPassword(postgres.getPassword());
+        store = new PostgresDataFlowStore(mapper, dataSource);
     }
 
     @Override

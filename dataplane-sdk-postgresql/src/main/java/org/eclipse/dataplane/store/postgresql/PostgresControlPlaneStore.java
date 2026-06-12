@@ -23,13 +23,14 @@ import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
 import org.eclipse.dataplane.port.store.ControlPlaneStore;
 
 import java.net.URI;
+import javax.sql.DataSource;
 
 import static java.lang.String.format;
 
 public class PostgresControlPlaneStore extends AbstractSqlStore implements ControlPlaneStore {
 
-    public PostgresControlPlaneStore(ObjectMapper objectMapper, String databaseUrl, String databaseUsername, String databasePassword) {
-        super(objectMapper, databaseUrl, databaseUsername, databasePassword);
+    public PostgresControlPlaneStore(ObjectMapper objectMapper, DataSource dataSource) {
+        super(objectMapper, dataSource);
     }
 
     @Override
@@ -44,7 +45,7 @@ public class PostgresControlPlaneStore extends AbstractSqlStore implements Contr
             statement.executeUpdate();
             return Result.success();
         } catch (Exception e) {
-            return Result.failure(new PersistenceException(String.format("Failed to persist ControlPlane with id %s.", controlPlane.getId()), e));
+            return Result.failure(new PersistenceException(format("Failed to persist ControlPlane with id %s.", controlPlane.getId()), e));
         } finally {
             closeConnection(connection);
         }
