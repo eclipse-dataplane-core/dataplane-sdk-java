@@ -4,7 +4,7 @@ plugins {
     `maven-publish`
     signing
     checkstyle
-    id("com.vanniktech.maven.publish") version "0.36.0"
+    id("com.vanniktech.maven.publish") version "0.37.0"
 }
 
 subprojects {
