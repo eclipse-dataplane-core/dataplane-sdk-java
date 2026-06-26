@@ -329,9 +329,9 @@ public class Dataplane {
 
         return toJson(message)
                 .map(body -> HttpRequest.newBuilder()
-                        .uri(URI.create(controlPlaneEndpoint + "/dataplanes/register"))
+                        .uri(URI.create(controlPlaneEndpoint + "/dataplanes"))
                         .header("content-type", "application/json")
-                        .POST(HttpRequest.BodyPublishers.ofString(body))
+                        .PUT(HttpRequest.BodyPublishers.ofString(body))
                         .build()
                 )
                 .compose(request -> {
