@@ -9,6 +9,7 @@
  *
  *  Contributors:
  *       Think-it GmbH - initial API and implementation
+ *       Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V. - Javadoc
  *
  */
 
@@ -17,8 +18,22 @@ package org.eclipse.dataplane.logic;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
 
+/**
+ * Contains the logic for when the started endpoint is called for a data flow. This endpoint is only
+ * called on the consumer side. The started request signals to the dataplane to begin a data
+ * transfer or that a data transmission has begun.
+ */
 public interface OnStarted {
 
+    /**
+     * Performs the logic when a started request is received. For a PULL transfer, the consumer
+     * dataplane receives a DataAddress in the started message and should start pulling data from
+     * the respective endpoint.
+     *
+     * @param dataFlow the data flow
+     * @return a successful or failed {@link Result}, indicating whether the action was successful;
+     *         in case of a failed result, it should provide an exception with error details
+     */
     Result<DataFlow> action(DataFlow dataFlow);
 
 }

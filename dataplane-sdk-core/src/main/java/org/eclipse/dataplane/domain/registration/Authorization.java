@@ -9,6 +9,7 @@
  *
  *  Contributors:
  *       Think-it GmbH - initial API and implementation
+ *       Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V. - Javadoc
  *
  */
 
@@ -23,14 +24,25 @@ public interface Authorization {
 
     /**
      * Return the authorization profile type string
+     *
+     * @return the authorization profile type string
      */
     String type();
 
     /**
      * Function that applies the authorization profile to the request builder.
      * e.g. the Authorization header could be added with proper content.
+     *
+     * @return a successful result containing the authorization header, or a failed result providing error details
      */
     Result<String> authorizationHeader(AuthorizationProfile profile);
 
+    /**
+     * Function that extract the id of the requesting control plane from a received Authorization
+     * header.
+     *
+     * @param authorizationHeader the authorization header
+     * @return a successful result containing the control plane id, or a failed result providing error details
+     */
     Result<String> extractCallerId(String authorizationHeader);
 }
