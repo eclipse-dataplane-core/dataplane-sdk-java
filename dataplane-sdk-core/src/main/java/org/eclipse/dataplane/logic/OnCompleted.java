@@ -9,6 +9,7 @@
  *
  *  Contributors:
  *       Think-it GmbH - initial API and implementation
+ *       Fraunhofer-Gesellschaft zur Förderung der angewandten Forschung e.V. - Javadoc
  *
  */
 
@@ -17,8 +18,20 @@ package org.eclipse.dataplane.logic;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
 
+/**
+ * Contains the logic for when the completed endpoint is called for a DataFlow. The completed
+ * notification signals to the data plane that a data flow has been completed. The dataplane can
+ * close/remove resources used for the transfer.
+ */
 public interface OnCompleted {
 
+    /**
+     * Performs the logic when a completed notification is received.
+     *
+     * @param dataFlow the data flow
+     * @return a successful or failed {@link Result}, indicating whether the action was successful;
+     *         in case of a failed result, it should provide an exception with error details
+     */
     Result<DataFlow> action(DataFlow dataFlow);
 
 }
