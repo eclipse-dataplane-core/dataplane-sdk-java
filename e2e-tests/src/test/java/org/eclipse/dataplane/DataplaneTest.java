@@ -38,6 +38,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.put;
+import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -154,7 +156,7 @@ class DataplaneTest {
 
         @Test
         void shouldRegisterOnTheControlPlane() {
-            controlPlane.stubFor(post(anyUrl()).willReturn(aResponse().withStatus(200)));
+            controlPlane.stubFor(put(anyUrl()).willReturn(aResponse().withStatus(200)));
 
             var dataplane = Dataplane.newInstance()
                     .id("dataplane-id")
@@ -166,7 +168,7 @@ class DataplaneTest {
             var result = dataplane.registerOn(controlPlane.baseUrl());
 
             assertThat(result.succeeded()).isTrue();
-            controlPlane.verify(postRequestedFor(urlPathEqualTo("/dataplanes/register"))
+            controlPlane.verify(putRequestedFor(urlPathEqualTo("/dataplanes"))
                     .withRequestBody(and(
                             matchingJsonPath("endpoint", equalTo("http://localhost/dataplane")),
                             matchingJsonPath("transferTypes[0]", equalTo("SupportedTransferType-PUSH")),
