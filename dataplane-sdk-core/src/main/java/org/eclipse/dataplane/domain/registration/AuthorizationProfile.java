@@ -17,7 +17,7 @@ package org.eclipse.dataplane.domain.registration;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.eclipse.dataplane.port.exception.IllegalAttributeTypeException;
+import org.eclipse.dataplane.exception.IllegalAttributeTypeException;
 
 import java.util.HashMap;
 import java.util.Map;

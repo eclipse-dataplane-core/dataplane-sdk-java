@@ -19,9 +19,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.domain.DataAddress;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
-import org.eclipse.dataplane.port.exception.PersistenceException;
-import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
-import org.eclipse.dataplane.port.store.DataFlowStore;
+import org.eclipse.dataplane.exception.PersistenceException;
+import org.eclipse.dataplane.exception.ResourceNotFoundException;
+import org.eclipse.dataplane.store.DataFlowStore;
 
 import java.net.URI;
 import javax.sql.DataSource;

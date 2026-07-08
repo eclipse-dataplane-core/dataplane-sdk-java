@@ -19,10 +19,10 @@ import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotAuthorizedException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
-import org.eclipse.dataplane.port.exception.AuthorizationNotSupported;
-import org.eclipse.dataplane.port.exception.ControlPlaneNotRegistered;
-import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
-import org.eclipse.dataplane.port.exception.UnauthorizedException;
+import org.eclipse.dataplane.exception.AuthorizationNotSupported;
+import org.eclipse.dataplane.exception.ControlPlaneNotRegistered;
+import org.eclipse.dataplane.exception.ResourceNotFoundException;
+import org.eclipse.dataplane.exception.UnauthorizedException;
 
 import java.util.function.Function;
 

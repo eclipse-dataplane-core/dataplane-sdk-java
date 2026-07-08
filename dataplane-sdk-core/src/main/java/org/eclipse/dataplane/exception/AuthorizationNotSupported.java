@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.dataplane.port.exception;
+package org.eclipse.dataplane.exception;
 
 import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
 
