@@ -16,8 +16,7 @@ package org.eclipse.dataplane.store;
 
 import org.eclipse.dataplane.domain.controlplane.ControlPlane;
 import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
-import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
-import org.eclipse.dataplane.port.store.ControlPlaneStore;
+import org.eclipse.dataplane.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 

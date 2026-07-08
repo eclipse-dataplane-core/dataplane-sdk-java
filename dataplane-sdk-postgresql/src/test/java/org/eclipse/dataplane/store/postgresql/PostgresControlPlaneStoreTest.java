@@ -15,7 +15,7 @@
 package org.eclipse.dataplane.store.postgresql;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.dataplane.port.store.ControlPlaneStore;
+import org.eclipse.dataplane.store.ControlPlaneStore;
 import org.eclipse.dataplane.store.ControlPlaneStoreTestBase;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

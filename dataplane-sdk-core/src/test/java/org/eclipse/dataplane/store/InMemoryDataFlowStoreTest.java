@@ -15,8 +15,6 @@
 package org.eclipse.dataplane.store;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eclipse.dataplane.port.store.DataFlowStore;
-import org.eclipse.dataplane.port.store.InMemoryDataFlowStore;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 

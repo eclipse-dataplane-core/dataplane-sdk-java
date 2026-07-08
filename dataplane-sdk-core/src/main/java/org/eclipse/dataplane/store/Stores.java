@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.dataplane.port.store;
+package org.eclipse.dataplane.store;
 
 /**
  * Data class that bundles the stores used by the dataplane.

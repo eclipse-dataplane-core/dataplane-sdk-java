@@ -12,7 +12,7 @@
  *
  */
 
-package org.eclipse.dataplane.port.exception;
+package org.eclipse.dataplane.exception;
 
 public class IllegalAttributeTypeException extends RuntimeException {
     public IllegalAttributeTypeException(String message) {

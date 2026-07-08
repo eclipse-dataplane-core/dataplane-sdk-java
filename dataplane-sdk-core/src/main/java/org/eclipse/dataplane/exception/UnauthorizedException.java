@@ -12,19 +12,12 @@
  *
  */
 
-package org.eclipse.dataplane.port.exception;
+package org.eclipse.dataplane.exception;
 
-/**
- * Indicates an error during database interactions, i.e. an error occurred persisting, reading or
- * deleting an entry.
- */
-public class PersistenceException extends RuntimeException {
+public class UnauthorizedException extends RuntimeException {
 
-    public PersistenceException(String message) {
+    public UnauthorizedException(String message) {
         super(message);
     }
 
-    public PersistenceException(String message, Throwable cause) {
-        super(message, cause);
-    }
 }

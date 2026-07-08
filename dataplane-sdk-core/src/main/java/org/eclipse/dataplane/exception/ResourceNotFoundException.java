@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2026 Think-it GmbH
+ *  Copyright (c) 2025 Think-it GmbH
  *
  *  This program and the accompanying materials are made available under the
  *  terms of the Apache License, Version 2.0 which is available at
@@ -12,12 +12,10 @@
  *
  */
 
-package org.eclipse.dataplane.port.exception;
+package org.eclipse.dataplane.exception;
 
-public class ControlPlaneNotRegistered extends Exception {
-
-    public ControlPlaneNotRegistered(String controlplaneId) {
-        super("Controlplane " + controlplaneId + " not registered");
+public class ResourceNotFoundException extends Exception {
+    public ResourceNotFoundException(String message) {
+        super(message);
     }
-
 }

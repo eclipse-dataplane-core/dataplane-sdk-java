@@ -16,8 +16,7 @@ package org.eclipse.dataplane.store;
 
 import org.eclipse.dataplane.domain.DataAddress;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
-import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
-import org.eclipse.dataplane.port.store.DataFlowStore;
+import org.eclipse.dataplane.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 

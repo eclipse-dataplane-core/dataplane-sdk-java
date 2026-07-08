@@ -12,10 +12,10 @@
  *
  */
 
-package org.eclipse.dataplane.port.exception;
+package org.eclipse.dataplane.exception;
 
-public class ResourceNotFoundException extends Exception {
-    public ResourceNotFoundException(String message) {
+public class DataplaneNotRegistered extends RuntimeException {
+    public DataplaneNotRegistered(String message) {
         super(message);
     }
 }

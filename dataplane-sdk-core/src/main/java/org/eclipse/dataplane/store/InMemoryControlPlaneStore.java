@@ -12,13 +12,13 @@
  *
  */
 
-package org.eclipse.dataplane.port.store;
+package org.eclipse.dataplane.store;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.controlplane.ControlPlane;
-import org.eclipse.dataplane.port.exception.ResourceNotFoundException;
+import org.eclipse.dataplane.exception.ResourceNotFoundException;
 
 import java.util.HashMap;
 import java.util.Map;

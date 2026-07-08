@@ -13,7 +13,7 @@
  *
  */
 
-package org.eclipse.dataplane.port.store;
+package org.eclipse.dataplane.store;
 
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
