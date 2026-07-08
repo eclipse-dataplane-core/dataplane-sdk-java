@@ -31,6 +31,7 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowStatusResponseMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowSuspendMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowTerminateMessage;
 import org.eclipse.dataplane.domain.registration.Authorization;
+import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
 import org.eclipse.dataplane.domain.registration.DataPlaneRegistrationMessage;
 import org.eclipse.dataplane.logic.OnCompleted;
@@ -75,6 +76,7 @@ public class Dataplane {
     private ControlPlaneStore controlPlaneStore = new InMemoryControlPlaneStore(objectMapper);
     private String id;
     private URI endpoint;
+    private AuthorizationProfile authorizationProfile;
     private final Set<String> profiles = new HashSet<>();
     private final Set<String> labels = new HashSet<>();
 
@@ -317,7 +319,7 @@ public class Dataplane {
 
     public Result<Void> registerOn(String controlPlaneEndpoint) {
 
-        var message = new DataPlaneRegistrationMessage(id, endpoint, profiles, labels);
+        var message = new DataPlaneRegistrationMessage(id, endpoint, profiles, labels, authorizationProfile);
 
         return toJson(message)
                 .map(body -> HttpRequest.newBuilder()
@@ -442,6 +444,11 @@ public class Dataplane {
 
         public Builder endpoint(URI endpoint) {
             dataplane.endpoint = endpoint;
+            return this;
+        }
+
+        public Builder authorizationProfile(AuthorizationProfile authorizationProfile) {
+            dataplane.authorizationProfile = authorizationProfile;
             return this;
         }
 

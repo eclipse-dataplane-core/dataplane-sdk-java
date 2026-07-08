@@ -57,7 +57,8 @@ Additionally, the `Dataplane.Builder` class provides methods for the following p
 - `endpoint`: the URL under which the Dataplane API is reachable, will be your application's base URL and path plus `/v1/dataflows`
 - `transferType`: a [transfer type](https://github.com/eclipse-dataplane-signaling/dataplane-signaling/blob/main/specifications/signaling.md#data-transfer-types) supported by the dataplane (multiple transfer types can be added)
 - `label`: a label for the dataplane instance which can be used by control planes to filter for specific dataplanes (multiple labels can be added)
-- `authorization`: defines the authorization used between control and dataplane, for more information see [Authorizations](#authorizations)
+- `authorization`: defines a supported authorization for communication with the control plane, for more information see [Authorizations](#authorizations)
+- `authorizationProfile`: defines the authorization profile used by this dataplane, i.e. how a control plane should authenticate when talking to this dataplane
 
 *There is one additional builder method called `stores()`, which will be detailed later in this guide. When not setting
 any stores specifically, both `DataFlow` and `ControlPlane` information will be stored in-memory.*
