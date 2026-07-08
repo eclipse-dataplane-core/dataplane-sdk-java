@@ -83,17 +83,17 @@ class StreamingPullTest {
 
     @Test
     void shouldPullDataFromProvider_thenProviderTerminatesIt() {
-        var transferType = "FileSystemStreaming-PULL";
+        var profile = "FileSystemStreaming-PULL";
         var processId = UUID.randomUUID().toString();
         var consumerProcessId = "consumer_" + processId;
-        var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
+        var prepareMessage = createPrepareMessage(consumerProcessId, profile);
 
         var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());
         assertThat(prepareResponse.dataAddress()).isNull();
 
         var providerProcessId = "provider_" + processId;
-        var startMessage = createStartMessage(providerProcessId, controlPlane.providerCallbackAddress(), transferType);
+        var startMessage = createStartMessage(providerProcessId, profile);
         var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(startResponse.state()).isEqualTo(STARTED.name());
         assertThat(startResponse.dataAddress()).isNotNull();
@@ -113,17 +113,17 @@ class StreamingPullTest {
 
     @Test
     void shouldSuspendAndResumeOnProvider() {
-        var transferType = "FileSystemStreaming-PULL";
+        var profile = "FileSystemStreaming-PULL";
         var processId = UUID.randomUUID().toString();
         var consumerProcessId = "consumer_" + processId;
-        var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
+        var prepareMessage = createPrepareMessage(consumerProcessId, profile);
 
         var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());
         assertThat(prepareResponse.dataAddress()).isNull();
 
         var providerProcessId = "provider_" + processId;
-        var startMessage = createStartMessage(providerProcessId, controlPlane.providerCallbackAddress(), transferType);
+        var startMessage = createStartMessage(providerProcessId, profile);
         var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(startResponse.state()).isEqualTo(STARTED.name());
         assertThat(startResponse.dataAddress()).isNotNull();

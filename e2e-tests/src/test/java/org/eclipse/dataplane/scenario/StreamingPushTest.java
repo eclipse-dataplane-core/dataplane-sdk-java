@@ -78,10 +78,10 @@ public class StreamingPushTest {
 
     @Test
     void shouldPushDataToEndpointPreparedByConsumer() {
-        var transferType = "FileSystemStreaming-PUSH";
+        var profile = "FileSystemStreaming-PUSH";
         var processId = UUID.randomUUID().toString();
         var consumerProcessId = "consumer_" + processId;
-        var prepareMessage = MessageFactory.createPrepareMessage(consumerProcessId, URI.create("http://callback"), transferType);
+        var prepareMessage = MessageFactory.createPrepareMessage(consumerProcessId, profile);
 
         var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());
@@ -89,7 +89,7 @@ public class StreamingPushTest {
         var destinationDataAddress = prepareResponse.dataAddress();
 
         var providerProcessId = "provider_" + processId;
-        var startMessage = MessageFactory.createStartMessage(providerProcessId, controlPlane.providerCallbackAddress(), transferType, destinationDataAddress);
+        var startMessage = MessageFactory.createStartMessage(providerProcessId, profile, destinationDataAddress);
         var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
 
         assertThat(startResponse.state()).isEqualTo(STARTED.name());
@@ -100,10 +100,10 @@ public class StreamingPushTest {
 
     @Test
     void shouldSuspendAndResumeByConsumer() {
-        var transferType = "FileSystemStreaming-PUSH";
+        var profile = "FileSystemStreaming-PUSH";
         var processId = UUID.randomUUID().toString();
         var consumerProcessId = "consumer_" + processId;
-        var prepareMessage = MessageFactory.createPrepareMessage(consumerProcessId, URI.create("http://callback"), transferType);
+        var prepareMessage = MessageFactory.createPrepareMessage(consumerProcessId, profile);
 
         var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());
@@ -111,7 +111,7 @@ public class StreamingPushTest {
         var destinationDataAddress = prepareResponse.dataAddress();
 
         var providerProcessId = "provider_" + processId;
-        var startMessage = MessageFactory.createStartMessage(providerProcessId, controlPlane.providerCallbackAddress(), transferType, destinationDataAddress);
+        var startMessage = MessageFactory.createStartMessage(providerProcessId, profile, destinationDataAddress);
         var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
 
         assertThat(startResponse.state()).isEqualTo(STARTED.name());

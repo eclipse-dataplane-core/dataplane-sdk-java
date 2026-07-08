@@ -75,7 +75,7 @@ public class AuthorizationTest {
         dataPlane.registerControlPlane(controlPlaneRegistrationMessage).orElseThrow(RuntimeException::new);
 
         var consumerProcessId = "consumer_" + UUID.randomUUID();
-        var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), "FileSystemAsync-PUSH");
+        var prepareMessage = createPrepareMessage(consumerProcessId, "FileSystemAsync-PUSH");
 
         controlPlane.consumerPrepare(prepareMessage).statusCode(202).extract().as(DataFlowStatusMessage.class);
 
@@ -97,7 +97,7 @@ public class AuthorizationTest {
         dataPlane.registerControlPlane(controlPlaneRegistrationMessage).orElseThrow(RuntimeException::new);
 
         var consumerProcessId = "consumer_" + UUID.randomUUID();
-        var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), "FileSystemAsync-PUSH");
+        var prepareMessage = createPrepareMessage(consumerProcessId, "FileSystemAsync-PUSH");
 
         controlPlane.consumerPrepare(prepareMessage).statusCode(401);
     }
@@ -114,7 +114,7 @@ public class AuthorizationTest {
         dataPlane.registerControlPlane(controlPlaneRegistrationMessage).orElseThrow(RuntimeException::new);
 
         var consumerProcessId = "consumer_" + UUID.randomUUID();
-        var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), "FileSystemAsync-PUSH");
+        var prepareMessage = createPrepareMessage(consumerProcessId, "FileSystemAsync-PUSH");
 
         controlPlane.consumerPrepare(prepareMessage).statusCode(202).extract().as(DataFlowStatusMessage.class);
 

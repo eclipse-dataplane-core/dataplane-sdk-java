@@ -103,10 +103,10 @@ public class AuthorizationOauth2Test {
         );
         dataPlane.registerControlPlane(controlPlaneRegistrationMessage).orElseThrow(RuntimeException::new);
 
-        var transferType = "FileSystemAsync-PUSH";
+        var profile = "FileSystemAsync-PUSH";
         var processId = UUID.randomUUID().toString();
         var consumerProcessId = "consumer_" + processId;
-        var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
+        var prepareMessage = createPrepareMessage(consumerProcessId, profile);
 
         controlPlane.consumerPrepare(prepareMessage).statusCode(202).extract().as(DataFlowStatusMessage.class);
 

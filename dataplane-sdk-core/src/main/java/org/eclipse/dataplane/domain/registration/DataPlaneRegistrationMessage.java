@@ -20,7 +20,7 @@ import java.util.Set;
 public record DataPlaneRegistrationMessage(
         String dataplaneId,
         URI endpoint,
-        Set<String> transferTypes,
+        Set<String> profiles,
         Set<String> labels
 // TODO: authorization
 ) {

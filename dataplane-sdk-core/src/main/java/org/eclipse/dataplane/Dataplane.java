@@ -75,7 +75,7 @@ public class Dataplane {
     private ControlPlaneStore controlPlaneStore = new InMemoryControlPlaneStore(objectMapper);
     private String id;
     private URI endpoint;
-    private final Set<String> transferTypes = new HashSet<>();
+    private final Set<String> profiles = new HashSet<>();
     private final Set<String> labels = new HashSet<>();
 
     private OnPrepare onPrepare = dataFlow -> Result.failure(new UnsupportedOperationException("onPrepare is not implemented"));
@@ -106,32 +106,25 @@ public class Dataplane {
                 .map(f -> new DataFlowStatusResponseMessage(f.getId(), f.getState().name()));
     }
 
-    private Result<Void> checkControlPlane(String controlplaneId) {
-        if (controlPlaneStore.exists(controlplaneId)) {
-            return Result.success();
-        }
-        return Result.failure(new ControlPlaneNotRegistered(controlplaneId));
-    }
-
     public Result<DataFlowStatusMessage> prepare(String controlplaneId, DataFlowPrepareMessage message) {
-        var initialDataFlow = DataFlow.newInstance()
-                .id(message.processId())
-                .state(DataFlow.State.INITIATING)
-                .labels(message.labels())
-                .metadata(message.metadata())
-                .callbackAddress(message.callbackAddress())
-                .transferType(message.transferType())
-                .datasetId(message.datasetId())
-                .agreementId(message.agreementId())
-                .participantId(message.participantId())
-                .counterPartyId(message.counterPartyId())
-                .dataspaceContext(message.dataspaceContext())
-                .controlplaneId(controlplaneId)
-                .type(DataFlow.Type.CONSUMER)
-                .build();
-
-        return checkControlPlane(controlplaneId)
-                .compose(v -> onPrepare.action(initialDataFlow))
+        return getControlPlane(controlplaneId)
+                .map(controlPlane -> DataFlow.newInstance()
+                        .id(message.processId())
+                        .state(DataFlow.State.INITIATING)
+                        .labels(message.labels())
+                        .metadata(message.metadata())
+                        .callbackAddress(controlPlane.getEndpoint())
+                        .profile(message.profile())
+                        .datasetId(message.datasetId())
+                        .agreementId(message.agreementId())
+                        .participantId(message.participantId())
+                        .counterPartyId(message.counterPartyId())
+                        .dataspaceContext(message.dataspaceContext())
+                        .controlplaneId(controlplaneId)
+                        .type(DataFlow.Type.CONSUMER)
+                        .build()
+                )
+                .compose(initialDataFlow -> onPrepare.action(initialDataFlow))
                 .compose(dataFlow -> {
                     if (dataFlow.isInitiating()) {
                         dataFlow.transitionToPrepared();
@@ -139,34 +132,33 @@ public class Dataplane {
 
                     DataFlowStatusMessage response;
                     if (dataFlow.isPrepared() && dataFlow.isPush()) {
-                        response = new DataFlowStatusMessage(dataFlow.getId(), initialDataFlow.getState().name(), dataFlow.getDataAddress(), null);
+                        response = new DataFlowStatusMessage(dataFlow.getId(), dataFlow.getState().name(), dataFlow.getDataAddress(), null);
                     } else {
-                        response = new DataFlowStatusMessage(dataFlow.getId(), initialDataFlow.getState().name(), null, null);
+                        response = new DataFlowStatusMessage(dataFlow.getId(), dataFlow.getState().name(), null, null);
                     }
 
                     return save(dataFlow).map(it -> response);
                 });
     }
 
-
     public Result<DataFlowStatusMessage> start(String controlplaneId, DataFlowStartMessage message) {
-        var initialDataFlow = DataFlow.newInstance()
-                .id(message.processId())
-                .state(DataFlow.State.INITIATING)
-                .dataAddress(message.dataAddress())
-                .callbackAddress(message.callbackAddress())
-                .transferType(message.transferType())
-                .datasetId(message.datasetId())
-                .agreementId(message.agreementId())
-                .participantId(message.participantId())
-                .counterPartyId(message.counterPartyId())
-                .dataspaceContext(message.dataspaceContext())
-                .controlplaneId(controlplaneId)
-                .type(DataFlow.Type.PROVIDER)
-                .build();
-
-        return checkControlPlane(controlplaneId)
-                .compose(v -> onStart.action(initialDataFlow))
+        return getControlPlane(controlplaneId)
+                .map(controlPlane -> DataFlow.newInstance()
+                        .id(message.processId())
+                        .state(DataFlow.State.INITIATING)
+                        .dataAddress(message.dataAddress())
+                        .callbackAddress(controlPlane.getEndpoint())
+                        .profile(message.profile())
+                        .datasetId(message.datasetId())
+                        .agreementId(message.agreementId())
+                        .participantId(message.participantId())
+                        .counterPartyId(message.counterPartyId())
+                        .dataspaceContext(message.dataspaceContext())
+                        .controlplaneId(controlplaneId)
+                        .type(DataFlow.Type.PROVIDER)
+                        .build()
+                )
+                .compose(initialDataFlow -> onStart.action(initialDataFlow))
                 .compose(dataFlow -> {
                     if (dataFlow.isInitiating()) {
                         dataFlow.transitionToStarted();
@@ -325,7 +317,7 @@ public class Dataplane {
 
     public Result<Void> registerOn(String controlPlaneEndpoint) {
 
-        var message = new DataPlaneRegistrationMessage(id, endpoint, transferTypes, labels);
+        var message = new DataPlaneRegistrationMessage(id, endpoint, profiles, labels);
 
         return toJson(message)
                 .map(body -> HttpRequest.newBuilder()
@@ -342,6 +334,14 @@ public class Dataplane {
                         return Result.failure(new DataplaneNotRegistered(response.body()));
                     }
                 });
+    }
+
+    private Result<ControlPlane> getControlPlane(String controlplaneId) {
+        var controlPlaneById = controlPlaneStore.findById(controlplaneId);
+        if (controlPlaneById.failed()) {
+            return Result.failure(new ControlPlaneNotRegistered(controlplaneId));
+        }
+        return controlPlaneById;
     }
 
     private DataAddress getDataAddressForResume(DataFlow dataFlow) {
@@ -363,7 +363,7 @@ public class Dataplane {
                             .header("content-type", "application/json")
                             .POST(HttpRequest.BodyPublishers.ofString(body));
 
-                    controlPlaneStore.findById(dataFlow.getControlplaneId())
+                    getControlPlane(dataFlow.getControlplaneId())
                             .compose(controlPlane -> {
                                 var authorizationProfile = controlPlane.getAuthorization();
                                 if (authorizationProfile != null) {
@@ -445,8 +445,8 @@ public class Dataplane {
             return this;
         }
 
-        public Builder transferType(String transferType) {
-            dataplane.transferTypes.add(transferType);
+        public Builder profile(String profile) {
+            dataplane.profiles.add(profile);
             return this;
         }
 

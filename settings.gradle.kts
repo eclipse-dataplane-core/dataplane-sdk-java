@@ -3,6 +3,7 @@ rootProject.name = "dataplane-sdk"
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
+        mavenLocal()
     }
 }
 

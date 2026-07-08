@@ -14,7 +14,6 @@
 
 package org.eclipse.dataplane.domain.dataflow;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -26,8 +25,7 @@ public record DataFlowPrepareMessage(
         String processId,
         String agreementId,
         String datasetId,
-        URI callbackAddress,
-        String transferType,
+        String profile,
         Map<String, Object> claims,
         List<String> labels,
         Map<String, Object> metadata
