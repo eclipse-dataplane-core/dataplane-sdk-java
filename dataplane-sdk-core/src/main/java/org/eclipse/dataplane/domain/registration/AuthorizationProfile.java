@@ -16,6 +16,7 @@ package org.eclipse.dataplane.domain.registration;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.eclipse.dataplane.port.exception.IllegalAttributeTypeException;
 
 import java.util.HashMap;
@@ -34,6 +35,7 @@ public class AuthorizationProfile {
         attributes.put("type", type);
     }
 
+    @JsonIgnore
     public String getType() {
         return attributes.get("type").toString();
     }

@@ -18,6 +18,7 @@ package org.eclipse.dataplane;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
+import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
 import org.eclipse.dataplane.port.exception.DataFlowNotifyControlPlaneFailed;
 import org.eclipse.dataplane.port.exception.DataplaneNotRegistered;
@@ -35,6 +36,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.and;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
@@ -172,6 +174,34 @@ class DataplaneTest {
                     .withRequestBody(and(
                             matchingJsonPath("endpoint", equalTo("http://localhost/dataplane")),
                             matchingJsonPath("profiles[0]", equalTo("SupportedProfile-PUSH")),
+                            matchingJsonPath("labels.size()", equalTo("2"))
+                    ))
+            );
+        }
+
+        @Test
+        void shouldRegisterOnTheControlPlane_withAuthProfile() {
+            controlPlane.stubFor(put(anyUrl()).willReturn(aResponse().withStatus(200)));
+
+            var authProfile = new AuthorizationProfile("test")
+                    .withAttribute("key", "value");
+
+            var dataplane = Dataplane.newInstance()
+                    .id("dataplane-id")
+                    .endpoint(URI.create("http://localhost/dataplane"))
+                    .authorizationProfile(authProfile)
+                    .profile("SupportedTransferType-PUSH")
+                    .label("label-one").label("label-two")
+                    .build();
+
+            var result = dataplane.registerOn(controlPlane.baseUrl());
+
+            assertThat(result.succeeded()).isTrue();
+            controlPlane.verify(putRequestedFor(urlPathEqualTo("/dataplanes"))
+                    .withRequestBody(and(
+                            matchingJsonPath("endpoint", equalTo("http://localhost/dataplane")),
+                            matchingJsonPath("authorization", equalToJson("{\"type\":\"test\",\"key\":\"value\"}")),
+                            matchingJsonPath("profiles[0]", equalTo("SupportedTransferType-PUSH")),
                             matchingJsonPath("labels.size()", equalTo("2"))
                     ))
             );

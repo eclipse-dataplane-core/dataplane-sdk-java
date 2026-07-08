@@ -21,7 +21,7 @@ public record DataPlaneRegistrationMessage(
         String dataplaneId,
         URI endpoint,
         Set<String> profiles,
-        Set<String> labels
-// TODO: authorization
+        Set<String> labels,
+        AuthorizationProfile authorization
 ) {
 }
