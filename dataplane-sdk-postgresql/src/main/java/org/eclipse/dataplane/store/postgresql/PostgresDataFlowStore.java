@@ -40,7 +40,7 @@ public class PostgresDataFlowStore extends AbstractSqlStore implements DataFlowS
 
         try (var statement = connection.prepareStatement(upsertDataFlowTemplate())) {
             statement.setString(1, dataFlow.getId());
-            statement.setString(2, dataFlow.getTransferType());
+            statement.setString(2, dataFlow.getProfile());
             statement.setString(3, dataFlow.getType().name());
             statement.setString(4, dataFlow.getState().name());
             statement.setString(5, dataFlow.getDatasetId());
@@ -80,7 +80,7 @@ public class PostgresDataFlowStore extends AbstractSqlStore implements DataFlowS
             var dataFlow = DataFlow.newInstance()
                     .id(flowId)
                     .state(DataFlow.State.valueOf(resultSet.getString("state")))
-                    .transferType(resultSet.getString("transfer_type"))
+                    .profile(resultSet.getString("transfer_type"))
                     .datasetId(resultSet.getString("dataset_id"))
                     .agreementId(resultSet.getString("agreement_id"))
                     .participantId(resultSet.getString("participant_id"))

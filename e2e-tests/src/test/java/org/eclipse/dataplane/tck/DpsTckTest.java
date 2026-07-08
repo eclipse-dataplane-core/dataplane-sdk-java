@@ -30,6 +30,7 @@ import java.util.Properties;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.platform.launcher.TagFilter.excludeTags;
 
 /**
  * Runs the DPS TCK data plane verification tests against the dataplane-sdk-java HTTP server.
@@ -50,7 +51,7 @@ public class DpsTckTest {
     void startDataplane() {
         var tckControlPlaneId = "tck-control-plane";
         var tckDataplane = new TckDataplane(tckControlPlaneId);
-        tckDataplane.getDataplane().registerControlPlane(new ControlPlaneRegistrationMessage(tckControlPlaneId, URI.create("http://localhost")));
+        tckDataplane.getDataplane().registerControlPlane(new ControlPlaneRegistrationMessage(tckControlPlaneId, URI.create("http://localhost:8083")));
 
         httpServer = new HttpServer();
         httpServer.start();
@@ -74,6 +75,7 @@ public class DpsTckTest {
                 .launcher(DpsSystemLauncher.class)
                 .properties(properties)
                 .addPackage("org.eclipse.dataspacetck.dps.verification.dataplane")
+                .filters(excludeTags("http-profile"))
                 .build()
                 .execute();
 

@@ -31,7 +31,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
@@ -60,13 +59,15 @@ public class ProviderPushTest {
             .authorizationTokenGenerator(() -> TOKEN_GENERATOR.apply("control-plane-id"))
             .build();
 
-    private final ConsumerDataPlane consumerDataPlane = new ConsumerDataPlane();
-    private final ProviderDataPlane providerDataPlane = new ProviderDataPlane();
+    private ConsumerDataPlane consumerDataPlane;
+    private ProviderDataPlane providerDataPlane;
 
     @BeforeEach
     void setUp() {
         httpServer.start();
         controlPlane.initialize(httpServer, "/consumer/data-plane", "/provider/data-plane");
+        consumerDataPlane = new ConsumerDataPlane(controlPlane);
+        providerDataPlane = new ProviderDataPlane(controlPlane);
 
         httpServer.deploy("/consumer/data-plane", consumerDataPlane.controller());
         httpServer.deploy("/provider/data-plane", providerDataPlane.controller());
@@ -79,10 +80,10 @@ public class ProviderPushTest {
 
     @Test
     void shouldPushDataToEndpointPreparedByConsumer() {
-        var transferType = "FileSystem-PUSH";
+        var profile = "FileSystem-PUSH";
         var processId = UUID.randomUUID().toString();
         var consumerProcessId = "consumer_" + processId;
-        var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
+        var prepareMessage = createPrepareMessage(consumerProcessId, profile);
 
         var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());
@@ -90,7 +91,7 @@ public class ProviderPushTest {
         var destinationDataAddress = prepareResponse.dataAddress();
 
         var providerProcessId = "provider_" + processId;
-        var startMessage = createStartMessage(providerProcessId, controlPlane.providerCallbackAddress(), transferType, destinationDataAddress);
+        var startMessage = createStartMessage(providerProcessId, profile, destinationDataAddress);
         var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
 
         assertThat(startResponse.state()).isEqualTo(STARTED.name());
@@ -110,16 +111,16 @@ public class ProviderPushTest {
 
     @Test
     void shouldSendError_whenFlowFails() {
-        var transferType = "FileSystem-PUSH";
+        var profile = "FileSystem-PUSH";
         var processId = UUID.randomUUID().toString();
         var consumerProcessId = "consumer_" + processId;
-        var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
+        var prepareMessage = createPrepareMessage(consumerProcessId, profile);
 
         controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         var invalidDataAddress = new DataAddress("FileSystem", "", emptyList());
 
         var providerProcessId = "provider_" + processId;
-        var startMessage = createStartMessage(providerProcessId, controlPlane.providerCallbackAddress(), transferType, invalidDataAddress);
+        var startMessage = createStartMessage(providerProcessId, profile, invalidDataAddress);
         controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
 
         await().untilAsserted(() -> {
@@ -133,10 +134,10 @@ public class ProviderPushTest {
 
     @Test
     void shouldPermitAsyncPreparation() {
-        var transferType = "FileSystemAsync-PUSH";
+        var profile = "FileSystemAsync-PUSH";
         var processId = UUID.randomUUID().toString();
         var consumerProcessId = "consumer_" + processId;
-        var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
+        var prepareMessage = createPrepareMessage(consumerProcessId, profile);
 
         var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(202).extract().as(DataFlowStatusMessage.class);
         assertThat(prepareResponse.state()).isEqualTo(PREPARING.name());
@@ -157,8 +158,9 @@ public class ProviderPushTest {
                 .onStart(this::onStart)
                 .build();
 
-        ProviderDataPlane() {
-            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), createAuthorizationProfile("provider")));
+        ProviderDataPlane(ControlPlane controlPlane) {
+            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id",
+                    controlPlane.providerCallbackAddress(), createAuthorizationProfile("provider")));
         }
 
         private Result<DataFlow> onStart(DataFlow dataFlow) {
@@ -199,8 +201,9 @@ public class ProviderPushTest {
                 .onTerminate(Result::success)
                 .build();
 
-        ConsumerDataPlane() {
-            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), createAuthorizationProfile("consumer")));
+        ConsumerDataPlane(ControlPlane controlPlane) {
+            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id",
+                    controlPlane.consumerCallbackAddress(), createAuthorizationProfile("consumer")));
         }
 
         public void completePreparation(String dataFlowId) {
@@ -210,7 +213,7 @@ public class ProviderPushTest {
         }
 
         private Result<DataFlow> onPrepare(DataFlow dataFlow) {
-            if (dataFlow.getTransferType().equals("FileSystemAsync-PUSH")) {
+            if (dataFlow.getProfile().equals("FileSystemAsync-PUSH")) {
                 dataFlow.transitionToPreparing();
                 return Result.success(dataFlow);
             }

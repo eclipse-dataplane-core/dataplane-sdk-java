@@ -77,7 +77,7 @@ class DataplaneTest {
         @Test
         void shouldReturnFailedFuture_whenControlPlaneIsNotAvailable() {
             var dataplane = Dataplane.newInstance().onPrepare(Result::success).build();
-            dataplane.registerControlPlane(new ControlPlaneRegistrationMessage("controlplaneId", URI.create("http://localhost/any")));
+            dataplane.registerControlPlane(new ControlPlaneRegistrationMessage("controlplaneId", URI.create(controlPlane.baseUrl())));
             dataplane.prepare("controlplaneId", createPrepareMessage());
             controlPlane.stop();
 
@@ -92,7 +92,7 @@ class DataplaneTest {
             controlPlane.stubFor(post(anyUrl()).willReturn(aResponse().withStatus(500)));
 
             var dataplane = Dataplane.newInstance().onPrepare(Result::success).build();
-            dataplane.registerControlPlane(new ControlPlaneRegistrationMessage("controlplaneId", URI.create("http://localhost/any")));
+            dataplane.registerControlPlane(new ControlPlaneRegistrationMessage("controlplaneId", URI.create(controlPlane.baseUrl())));
             dataplane.prepare("controlplaneId", createPrepareMessage());
 
             var result = dataplane.notifyCompleted("dataFlowId");
@@ -106,7 +106,7 @@ class DataplaneTest {
         void shouldTransitionToCompleted_whenControlPlaneRespondCorrectly() {
             controlPlane.stubFor(post(anyUrl()).willReturn(aResponse().withStatus(200)));
             var dataplane = Dataplane.newInstance().onPrepare(Result::success).build();
-            dataplane.registerControlPlane(new ControlPlaneRegistrationMessage("controlplaneId", URI.create("http://localhost/any")));
+            dataplane.registerControlPlane(new ControlPlaneRegistrationMessage("controlplaneId", URI.create(controlPlane.baseUrl())));
             dataplane.prepare("controlplaneId", createPrepareMessage());
 
             var result = dataplane.notifyCompleted("dataFlowId");
@@ -132,7 +132,7 @@ class DataplaneTest {
         void shouldSendDataFlowStatusMessage_whenDataFlowIsErrored() {
             controlPlane.stubFor(post(anyUrl()).willReturn(aResponse().withStatus(200)));
             var dataplane = Dataplane.newInstance().id("dataplane-id").onPrepare(Result::success).build();
-            dataplane.registerControlPlane(new ControlPlaneRegistrationMessage("controlplaneId", URI.create("http://localhost/any")));
+            dataplane.registerControlPlane(new ControlPlaneRegistrationMessage("controlplaneId", URI.create(controlPlane.baseUrl())));
             dataplane.prepare("controlplaneId", createPrepareMessage());
 
             var result = dataplane.notifyErrored("dataFlowId", new RuntimeException("some-error"));
@@ -161,7 +161,7 @@ class DataplaneTest {
             var dataplane = Dataplane.newInstance()
                     .id("dataplane-id")
                     .endpoint(URI.create("http://localhost/dataplane"))
-                    .transferType("SupportedTransferType-PUSH")
+                    .profile("SupportedProfile-PUSH")
                     .label("label-one").label("label-two")
                     .build();
 
@@ -171,7 +171,7 @@ class DataplaneTest {
             controlPlane.verify(putRequestedFor(urlPathEqualTo("/dataplanes"))
                     .withRequestBody(and(
                             matchingJsonPath("endpoint", equalTo("http://localhost/dataplane")),
-                            matchingJsonPath("transferTypes[0]", equalTo("SupportedTransferType-PUSH")),
+                            matchingJsonPath("profiles[0]", equalTo("SupportedProfile-PUSH")),
                             matchingJsonPath("labels.size()", equalTo("2"))
                     ))
             );
@@ -184,7 +184,7 @@ class DataplaneTest {
             var dataplane = Dataplane.newInstance()
                     .id("dataplane-id")
                     .endpoint(URI.create("http://localhost/dataplane"))
-                    .transferType("SupportedTransferType-PUSH")
+                    .profile("SupportedProfile-PUSH")
                     .label("label-one").label("label-two")
                     .build();
 
@@ -196,6 +196,6 @@ class DataplaneTest {
     }
 
     private DataFlowPrepareMessage createPrepareMessage() {
-        return MessageFactory.createPrepareMessage("dataFlowId", URI.create(controlPlane.baseUrl()), "Something-PUSH");
+        return MessageFactory.createPrepareMessage("dataFlowId", "Something-PUSH");
     }
 }

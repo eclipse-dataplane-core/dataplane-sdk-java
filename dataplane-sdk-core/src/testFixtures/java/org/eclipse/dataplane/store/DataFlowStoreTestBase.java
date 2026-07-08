@@ -92,7 +92,7 @@ public abstract class DataFlowStoreTestBase {
         return DataFlow.newInstance()
                 .id(id)
                 .state(DataFlow.State.INITIATING)
-                .transferType("HTTP-PUSH")
+                .profile("HTTP-PUSH")
                 .datasetId("dataset")
                 .agreementId("agreement")
                 .participantId("participant")

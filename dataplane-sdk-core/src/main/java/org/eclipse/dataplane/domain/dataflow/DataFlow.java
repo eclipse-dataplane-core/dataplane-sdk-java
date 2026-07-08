@@ -26,7 +26,7 @@ public class DataFlow {
 
     private String id;
     private State state;
-    private String transferType;
+    private String profile;
     private String datasetId;
     private String agreementId;
     private String participantId;
@@ -61,8 +61,8 @@ public class DataFlow {
         return callbackAddress;
     }
 
-    public String getTransferType() {
-        return transferType;
+    public String getProfile() {
+        return profile;
     }
 
     public String getDatasetId() {
@@ -132,11 +132,11 @@ public class DataFlow {
     }
 
     public boolean isPush() {
-        return transferTypeLastToken().equalsIgnoreCase("push");
+        return profileLastToken().equalsIgnoreCase("push");
     }
 
     public boolean isPull() {
-        return transferTypeLastToken().equalsIgnoreCase("pull");
+        return profileLastToken().equalsIgnoreCase("pull");
     }
 
     public boolean isInitiating() {
@@ -167,8 +167,8 @@ public class DataFlow {
         return type;
     }
 
-    private String transferTypeLastToken() {
-        return transferType.substring(transferType.lastIndexOf('-') + 1);
+    private String profileLastToken() {
+        return profile.substring(profile.lastIndexOf('-') + 1);
     }
 
     public enum Type {
@@ -202,8 +202,8 @@ public class DataFlow {
             return this;
         }
 
-        public Builder transferType(String transferType) {
-            dataFlow.transferType = transferType;
+        public Builder profile(String profile) {
+            dataFlow.profile = profile;
             return this;
         }
 

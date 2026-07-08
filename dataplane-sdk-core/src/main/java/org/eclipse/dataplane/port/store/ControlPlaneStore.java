@@ -56,5 +56,6 @@ public interface ControlPlaneStore {
      * @param controlplaneId the id of the ControlPlane
      * @return true, if the ControlPlane exists in the store, false otherwise
      */
+    @Deprecated(since = "1.0.0")
     boolean exists(String controlplaneId);
 }

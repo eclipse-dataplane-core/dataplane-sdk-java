@@ -19,26 +19,24 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.jspecify.annotations.NonNull;
 
-import java.net.URI;
-
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
 public interface MessageFactory {
 
-    static @NonNull DataFlowPrepareMessage createPrepareMessage(String consumerProcessId, URI callbackAddress, String transferType) {
+    static @NonNull DataFlowPrepareMessage createPrepareMessage(String consumerProcessId, String profile) {
         return new DataFlowPrepareMessage("theMessageId", "theParticipantId", "theCounterPartyId",
-                "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId", callbackAddress,
-                transferType, emptyMap(), emptyList(), emptyMap());
+                "theDataspaceContext", consumerProcessId, "theAgreementId", "theDatasetId",
+                profile, emptyMap(), emptyList(), emptyMap());
     }
 
-    static @NonNull DataFlowStartMessage createStartMessage(String providerProcessId, URI callbackAddress, String transferType) {
-        return createStartMessage(providerProcessId, callbackAddress, transferType, null);
+    static @NonNull DataFlowStartMessage createStartMessage(String providerProcessId, String profile) {
+        return createStartMessage(providerProcessId, profile, null);
     }
 
-    static @NonNull DataFlowStartMessage createStartMessage(String providerProcessId, URI callbackAddress, String transferType, DataAddress destinationDataAddress) {
+    static @NonNull DataFlowStartMessage createStartMessage(String providerProcessId, String profile, DataAddress destinationDataAddress) {
         return new DataFlowStartMessage("theMessageId", "theParticipantId", "theCounterPartyId",
-                "theDataspaceContext", providerProcessId, "theAgreementId", "theDatasetId", callbackAddress,
-                transferType, destinationDataAddress, emptyMap(), emptyList(), emptyMap());
+                "theDataspaceContext", providerProcessId, "theAgreementId", "theDatasetId",
+                profile, destinationDataAddress, emptyMap(), emptyList(), emptyMap());
     }
 }

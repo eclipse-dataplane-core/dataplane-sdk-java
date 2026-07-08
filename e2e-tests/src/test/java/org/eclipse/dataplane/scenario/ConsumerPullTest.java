@@ -32,7 +32,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -57,13 +56,15 @@ class ConsumerPullTest {
     private final ControlPlane controlPlane = ControlPlane.newInstance()
             .authorizationTokenGenerator(() -> TOKEN_GENERATOR.apply("control-plane-id"))
             .build();
-    private final ConsumerDataPlane consumerDataPlane = new ConsumerDataPlane();
-    private final ProviderDataPlane providerDataPlane = new ProviderDataPlane(filesAvailableOnProvider);
+    private ConsumerDataPlane consumerDataPlane;
+    private ProviderDataPlane providerDataPlane;
 
     @BeforeEach
     void setUp() {
         httpServer.start();
         controlPlane.initialize(httpServer, "/consumer/data-plane", "/provider/data-plane");
+        consumerDataPlane = new ConsumerDataPlane();
+        providerDataPlane = new ProviderDataPlane(filesAvailableOnProvider);
 
         httpServer.deploy("/consumer/data-plane", consumerDataPlane.controller());
         httpServer.deploy("/provider/data-plane", providerDataPlane.controller());
@@ -76,17 +77,17 @@ class ConsumerPullTest {
 
     @Test
     void shouldPullDataFromProvider() {
-        var transferType = "FileSystem-PULL";
+        var profile = "FileSystem-PULL";
         var processId = UUID.randomUUID().toString();
         var consumerProcessId = "consumer_" + processId;
-        var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
+        var prepareMessage = createPrepareMessage(consumerProcessId, profile);
 
         var prepareResponse = controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(prepareResponse.state()).isEqualTo(PREPARED.name());
         assertThat(prepareResponse.dataAddress()).isNull();
 
         var providerProcessId = "provider_" + processId;
-        var startMessage = createStartMessage(providerProcessId, controlPlane.providerCallbackAddress(), transferType);
+        var startMessage = createStartMessage(providerProcessId, profile);
         var startResponse = controlPlane.providerStart(startMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
         assertThat(startResponse.state()).isEqualTo(STARTED.name());
         assertThat(startResponse.dataAddress()).isNotNull();
@@ -101,14 +102,14 @@ class ConsumerPullTest {
 
     @Test
     void shouldPermitAsyncStartup() {
-        var transferType = "FileSystemAsync-PULL";
+        var profile = "FileSystemAsync-PULL";
         var processId = UUID.randomUUID().toString();
         var consumerProcessId = "consumer_" + processId;
-        var prepareMessage = createPrepareMessage(consumerProcessId, controlPlane.consumerCallbackAddress(), transferType);
+        var prepareMessage = createPrepareMessage(consumerProcessId, profile);
         controlPlane.consumerPrepare(prepareMessage).statusCode(200).extract().as(DataFlowStatusMessage.class);
 
         var providerProcessId = "provider_" + processId;
-        var startMessage = createStartMessage(providerProcessId, controlPlane.providerCallbackAddress(), transferType);
+        var startMessage = createStartMessage(providerProcessId, profile);
         var startResponse = controlPlane.providerStart(startMessage).statusCode(202).extract().as(DataFlowStatusMessage.class);
         assertThat(startResponse.state()).isEqualTo(STARTING.name());
         assertThat(startResponse.dataAddress()).isNull();
@@ -131,7 +132,7 @@ class ConsumerPullTest {
 
 
         ConsumerDataPlane() {
-            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), createAuthorizationProfile("consumer")));
+            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", controlPlane.consumerCallbackAddress(), createAuthorizationProfile("consumer")));
             try {
                 storage = Files.createTempDirectory("consumer-storage");
             } catch (IOException e) {
@@ -167,7 +168,7 @@ class ConsumerPullTest {
         private final int filesToBeCreated;
 
         ProviderDataPlane(int fileToBeCreated) {
-            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", URI.create("http://localhost:any"), createAuthorizationProfile("provider")));
+            sdk.registerControlPlane(new ControlPlaneRegistrationMessage("control-plane-id", controlPlane.providerCallbackAddress(), createAuthorizationProfile("provider")));
             this.filesToBeCreated = fileToBeCreated;
         }
 
@@ -182,7 +183,7 @@ class ConsumerPullTest {
         }
 
         private Result<DataFlow> onStart(DataFlow dataFlow) {
-            if (dataFlow.getTransferType().equals("FileSystemAsync-PULL")) {
+            if (dataFlow.getProfile().equals("FileSystemAsync-PULL")) {
                 dataFlow.transitionToStarting();
                 return Result.success(dataFlow);
             }
