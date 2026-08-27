@@ -111,7 +111,7 @@ public class Dataplane {
     public Result<DataFlowStatusMessage> prepare(String controlplaneId, DataFlowPrepareMessage message) {
         return getControlPlane(controlplaneId)
                 .map(controlPlane -> DataFlow.newInstance()
-                        .id(message.processId())
+                        .id(message.dataFlowId())
                         .state(DataFlow.State.INITIATING)
                         .labels(message.labels())
                         .metadata(message.metadata())
@@ -146,7 +146,7 @@ public class Dataplane {
     public Result<DataFlowStatusMessage> start(String controlplaneId, DataFlowStartMessage message) {
         return getControlPlane(controlplaneId)
                 .map(controlPlane -> DataFlow.newInstance()
-                        .id(message.processId())
+                        .id(message.dataFlowId())
                         .state(DataFlow.State.INITIATING)
                         .dataAddress(message.dataAddress())
                         .callbackAddress(controlPlane.getEndpoint())
