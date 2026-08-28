@@ -22,7 +22,7 @@ public record DataFlowPrepareMessage(
         String participantId,
         String counterPartyId,
         String dataspaceContext,
-        String processId,
+        String dataFlowId,
         String agreementId,
         String datasetId,
         String profile,
