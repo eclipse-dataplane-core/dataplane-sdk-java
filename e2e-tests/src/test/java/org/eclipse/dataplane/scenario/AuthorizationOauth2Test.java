@@ -18,11 +18,15 @@ import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JOSEObjectType;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
-import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -53,23 +57,30 @@ import static org.eclipse.dataplane.MessageFactory.createPrepareMessage;
 public class AuthorizationOauth2Test {
 
     private final HttpServer httpServer = new HttpServer();
-    private final Oauth2ClientCredentialsAuthorization oauth2ClientCredentialsAuthorization = new Oauth2ClientCredentialsAuthorization();
+    private Oauth2ClientCredentialsAuthorization oauth2ClientCredentialsAuthorization;
     private ControlPlane controlPlane;
-    private final Dataplane dataPlane = Dataplane.newInstance()
-            .id("data-plane")
-            .registerAuthorization(oauth2ClientCredentialsAuthorization)
-            .onPrepare(dataFlow -> {
-                dataFlow.transitionToPreparing();
-                return Result.success(dataFlow);
-            })
-            .build();
+    private Dataplane dataPlane;
+    private Oauth2TokenController tokenController;
 
     private final String clientId = UUID.randomUUID().toString();
     private final String clientSecret = UUID.randomUUID().toString();
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws JOSEException {
         httpServer.start();
+
+        tokenController = new Oauth2TokenController(clientId, clientSecret);
+        var jwksUri = "http://localhost:" + httpServer.port() + "/oauth2/jwks";
+        oauth2ClientCredentialsAuthorization = new Oauth2ClientCredentialsAuthorization(jwksUri);
+
+        dataPlane = Dataplane.newInstance()
+                .id("data-plane")
+                .registerAuthorization(oauth2ClientCredentialsAuthorization)
+                .onPrepare(dataFlow -> {
+                    dataFlow.transitionToPreparing();
+                    return Result.success(dataFlow);
+                })
+                .build();
 
         controlPlane = ControlPlane.newInstance()
                 .authorizationTokenGenerator(() -> oauth2ClientCredentialsAuthorization.authorizationHeader(oauth2AuthorizationProfile()))
@@ -78,7 +89,7 @@ public class AuthorizationOauth2Test {
         controlPlane.initialize(httpServer, "/data-plane", "/data-plane");
 
         httpServer.deploy("/data-plane", new DataPlaneSignalingApiController(dataPlane));
-        httpServer.deploy("/oauth2", new Oauth2TokenController(clientId, clientSecret));
+        httpServer.deploy("/oauth2", tokenController);
     }
 
     @AfterEach
@@ -126,13 +137,14 @@ public class AuthorizationOauth2Test {
     @Path("/")
     public static class Oauth2TokenController {
 
-
         private final String clientId;
         private final String clientSecret;
+        private final RSAKey rsaKey;
 
-        public Oauth2TokenController(String clientId, String clientSecret) {
+        public Oauth2TokenController(String clientId, String clientSecret) throws JOSEException {
             this.clientId = clientId;
             this.clientSecret = clientSecret;
+            this.rsaKey = new RSAKeyGenerator(2048).keyID("key-1").generate();
         }
 
         @POST
@@ -153,29 +165,35 @@ public class AuthorizationOauth2Test {
             return Response.ok(responseBody).build();
         }
 
+        @GET
+        @Path("/jwks")
+        @Produces(APPLICATION_JSON)
+        public Response jwks() {
+            var jwkSet = new JWKSet(rsaKey.toPublicJWK());
+            return Response.ok(jwkSet.toJSONObject()).build();
+        }
+
         public String issueJwt(String sub) {
             var now = new Date();
 
             var claimsSet = new JWTClaimsSet.Builder()
                     .subject(sub)
                     .issuer("https://your-app.com")
-                    .audience("https://api.your-app.com")
-                    .expirationTime(new Date(now.getTime() + 1000))
+                    .expirationTime(new Date(now.getTime() + 60_000))
                     .notBeforeTime(now)
                     .issueTime(now)
                     .jwtID(UUID.randomUUID().toString())
                     .build();
 
-            var header = new JWSHeader.Builder(JWSAlgorithm.HS256)
+            var header = new JWSHeader.Builder(JWSAlgorithm.RS256)
+                    .keyID(rsaKey.getKeyID())
                     .type(JOSEObjectType.JWT)
                     .build();
 
             var signedJwt = new SignedJWT(header, claimsSet);
 
-            var secret = "random-256-bit-secret-" + UUID.randomUUID();
             try {
-                var signer = new MACSigner(secret.getBytes());
-                signedJwt.sign(signer);
+                signedJwt.sign(new RSASSASigner(rsaKey));
             } catch (JOSEException e) {
                 throw new RuntimeException(e);
             }
