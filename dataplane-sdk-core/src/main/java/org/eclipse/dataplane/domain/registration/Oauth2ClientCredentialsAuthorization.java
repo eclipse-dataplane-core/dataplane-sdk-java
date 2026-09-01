@@ -15,7 +15,8 @@
 package org.eclipse.dataplane.domain.registration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.jose.jwk.source.JWKSourceBuilder;
+import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import org.eclipse.dataplane.domain.Result;
 
 import java.net.URI;
@@ -25,14 +26,21 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static com.nimbusds.jose.proc.JWSAlgorithmFamilyJWSKeySelector.fromJWKSource;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 
 public class Oauth2ClientCredentialsAuthorization implements Authorization {
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final String jwksUri;
+
+    public Oauth2ClientCredentialsAuthorization(String jwksUri) {
+        this.jwksUri = Objects.requireNonNull(jwksUri, "jwksUri is required for JWT verification");
+    }
 
     @Override
     public String type() {
@@ -75,12 +83,16 @@ public class Oauth2ClientCredentialsAuthorization implements Authorization {
     public Result<String> extractCallerId(String authorizationHeader) {
         try {
             var token = authorizationHeader.substring("Bearer ".length());
-            var jwt = SignedJWT.parse(token);
-            var sub = jwt.getJWTClaimsSet().getClaims().get("sub");
-            if (sub instanceof String callerId) {
-                return Result.success(callerId);
+
+            var jwtProcessor = new DefaultJWTProcessor<>();
+            jwtProcessor.setJWSKeySelector(fromJWKSource(JWKSourceBuilder.create(URI.create(jwksUri).toURL()).build()));
+
+            var claimsSet = jwtProcessor.process(token, null);
+            var sub = claimsSet.getSubject();
+            if (sub == null) {
+                return Result.failure(new RuntimeException("JWT missing sub claim"));
             }
-            return Result.failure(new RuntimeException("JWT sub claim %s is not a string".formatted(sub)));
+            return Result.success(sub);
         } catch (Exception e) {
             return Result.failure(e);
         }
