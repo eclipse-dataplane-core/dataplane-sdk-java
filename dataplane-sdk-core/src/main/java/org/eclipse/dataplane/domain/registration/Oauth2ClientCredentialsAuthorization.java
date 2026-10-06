@@ -14,10 +14,10 @@
 
 package org.eclipse.dataplane.domain.registration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.jwk.source.JWKSourceBuilder;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import org.eclipse.dataplane.domain.Result;
+import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
 import java.net.URLEncoder;

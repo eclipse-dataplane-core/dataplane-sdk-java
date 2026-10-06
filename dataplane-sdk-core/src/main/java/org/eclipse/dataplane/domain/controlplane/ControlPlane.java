@@ -14,8 +14,8 @@
 
 package org.eclipse.dataplane.domain.controlplane;
 
-import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
+import tools.jackson.databind.annotation.JsonPOJOBuilder;
 
 import java.net.URI;
 import java.util.Objects;

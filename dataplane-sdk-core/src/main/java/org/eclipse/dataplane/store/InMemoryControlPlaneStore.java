@@ -14,11 +14,11 @@
 
 package org.eclipse.dataplane.store;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.controlplane.ControlPlane;
 import org.eclipse.dataplane.exception.ResourceNotFoundException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,7 +37,7 @@ public class InMemoryControlPlaneStore implements ControlPlaneStore {
         try {
             store.put(controlPlane.getId(), objectMapper.writeValueAsString(controlPlane));
             return Result.success();
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return Result.failure(e);
         }
     }
@@ -70,7 +70,7 @@ public class InMemoryControlPlaneStore implements ControlPlaneStore {
         try {
             var deserialized = objectMapper.readValue(json, ControlPlane.class);
             return Result.success(deserialized);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return Result.failure(e);
         }
     }

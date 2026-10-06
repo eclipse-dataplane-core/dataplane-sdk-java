@@ -14,7 +14,6 @@
 
 package org.eclipse.dataplane.store.postgresql;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.store.DataFlowStore;
 import org.eclipse.dataplane.store.DataFlowStoreTestBase;
 import org.junit.jupiter.api.AfterAll;
@@ -24,8 +23,10 @@ import org.postgresql.ds.PGSimpleDataSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
-import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
 @Testcontainers
 class PostgresDataFlowStoreTest extends DataFlowStoreTestBase {
@@ -35,7 +36,7 @@ class PostgresDataFlowStoreTest extends DataFlowStoreTestBase {
     private static final String USERNAME = "user";
     private static final String PASSWORD = "password";
 
-    private final ObjectMapper mapper = new ObjectMapper().configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private final ObjectMapper mapper = JsonMapper.builder().configure(FAIL_ON_UNKNOWN_PROPERTIES, false).build();
     private PostgresDataFlowStore store;
 
     @Container
