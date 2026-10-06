@@ -14,13 +14,13 @@
 
 package org.eclipse.dataplane.store.postgresql;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.controlplane.ControlPlane;
 import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
 import org.eclipse.dataplane.exception.PersistenceException;
 import org.eclipse.dataplane.exception.ResourceNotFoundException;
 import org.eclipse.dataplane.store.ControlPlaneStore;
+import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
 import javax.sql.DataSource;

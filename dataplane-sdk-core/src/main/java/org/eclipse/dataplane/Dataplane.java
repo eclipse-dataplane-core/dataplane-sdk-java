@@ -16,8 +16,6 @@
 
 package org.eclipse.dataplane;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.domain.DataAddress;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.controlplane.ControlPlane;
@@ -52,6 +50,9 @@ import org.eclipse.dataplane.store.DataFlowStore;
 import org.eclipse.dataplane.store.InMemoryControlPlaneStore;
 import org.eclipse.dataplane.store.InMemoryDataFlowStore;
 import org.eclipse.dataplane.store.Stores;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -64,14 +65,15 @@ import java.util.Set;
 import java.util.UUID;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
-import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
 
 public class Dataplane {
 
-    private final ObjectMapper objectMapper = new ObjectMapper()
+    private final ObjectMapper objectMapper = JsonMapper.builder()
             .configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
-            .setDefaultPropertyInclusion(NON_NULL);
+            .changeDefaultPropertyInclusion(incl -> incl.withValueInclusion(NON_NULL))
+            .build();
     private DataFlowStore dataFlowStore = new InMemoryDataFlowStore(objectMapper);
     private ControlPlaneStore controlPlaneStore = new InMemoryControlPlaneStore(objectMapper);
     private String id;
@@ -391,7 +393,7 @@ public class Dataplane {
     private Result<String> toJson(Object message) {
         try {
             return Result.success(objectMapper.writeValueAsString(message));
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return Result.failure(e);
         }
     }

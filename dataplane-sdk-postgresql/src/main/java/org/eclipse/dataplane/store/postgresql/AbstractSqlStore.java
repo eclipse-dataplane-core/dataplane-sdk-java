@@ -14,11 +14,11 @@
 
 package org.eclipse.dataplane.store.postgresql;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.exception.PersistenceException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.ObjectMapper;
 
 import java.sql.Connection;
 import javax.sql.DataSource;
@@ -61,7 +61,7 @@ public abstract class AbstractSqlStore {
 
         try {
             return object instanceof String ? object.toString() : objectMapper.writeValueAsString(object);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PersistenceException("Failed to convert object to JSON.", e);
         }
     }
@@ -81,7 +81,7 @@ public abstract class AbstractSqlStore {
 
         try {
             return objectMapper.readValue(json, type);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new PersistenceException("Failed to convert JSON to object.", e);
         }
     }

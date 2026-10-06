@@ -14,11 +14,11 @@
 
 package org.eclipse.dataplane.store;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlow;
 import org.eclipse.dataplane.exception.ResourceNotFoundException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,7 +37,7 @@ public class InMemoryDataFlowStore implements DataFlowStore {
         try {
             store.put(dataFlow.getId(), objectMapper.writeValueAsString(dataFlow));
             return Result.success();
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return Result.failure(e);
         }
     }
@@ -52,7 +52,7 @@ public class InMemoryDataFlowStore implements DataFlowStore {
         try {
             var deserialized = objectMapper.readValue(dataFlow, DataFlow.class);
             return Result.success(deserialized);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return Result.failure(e);
         }
     }

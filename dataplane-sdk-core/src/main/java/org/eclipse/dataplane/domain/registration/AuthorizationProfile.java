@@ -16,12 +16,15 @@ package org.eclipse.dataplane.domain.registration;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import org.eclipse.dataplane.exception.IllegalAttributeTypeException;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+
+@JsonAutoDetect(getterVisibility = NONE, isGetterVisibility = NONE)
 public class AuthorizationProfile {
 
     private final Map<String, Object> attributes;
@@ -35,7 +38,6 @@ public class AuthorizationProfile {
         attributes.put("type", type);
     }
 
-    @JsonIgnore
     public String getType() {
         return attributes.get("type").toString();
     }

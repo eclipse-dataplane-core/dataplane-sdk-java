@@ -14,13 +14,13 @@
 
 package org.eclipse.dataplane.store;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
-import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
 class InMemoryDataFlowStoreTest extends DataFlowStoreTestBase {
 
-    private InMemoryDataFlowStore store = new InMemoryDataFlowStore(new ObjectMapper().configure(FAIL_ON_UNKNOWN_PROPERTIES, false));
+    private InMemoryDataFlowStore store = new InMemoryDataFlowStore(JsonMapper.builder().configure(FAIL_ON_UNKNOWN_PROPERTIES, false).build());
 
     @Override
     protected DataFlowStore store() {
