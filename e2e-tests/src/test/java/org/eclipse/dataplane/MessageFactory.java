@@ -19,6 +19,8 @@ import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
 import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.jspecify.annotations.NonNull;
 
+import java.util.Map;
+
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
@@ -37,6 +39,6 @@ public interface MessageFactory {
     static @NonNull DataFlowStartMessage createStartMessage(String providerProcessId, String profile, DataAddress destinationDataAddress) {
         return new DataFlowStartMessage("theMessageId", "theParticipantId", "theCounterPartyId",
                 "theDataspaceContext", providerProcessId, "theAgreementId", "theDatasetId",
-                profile, destinationDataAddress, emptyMap(), emptyList(), emptyMap());
+                profile, destinationDataAddress, emptyMap(), emptyList(), Map.of("the", "metadata"));
     }
 }

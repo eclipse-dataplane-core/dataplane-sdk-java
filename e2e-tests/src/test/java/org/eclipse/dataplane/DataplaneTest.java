@@ -18,6 +18,7 @@ package org.eclipse.dataplane;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import org.eclipse.dataplane.domain.Result;
 import org.eclipse.dataplane.domain.dataflow.DataFlowPrepareMessage;
+import org.eclipse.dataplane.domain.dataflow.DataFlowStartMessage;
 import org.eclipse.dataplane.domain.registration.AuthorizationProfile;
 import org.eclipse.dataplane.domain.registration.ControlPlaneRegistrationMessage;
 import org.eclipse.dataplane.exception.DataFlowNotifyControlPlaneFailed;
@@ -115,6 +116,30 @@ class DataplaneTest {
 
             assertThat(result.succeeded()).isTrue();
             assertThat(dataplane.status("dataFlowId").getContent().state()).isEqualTo(COMPLETED.name());
+        }
+
+        @Test
+        void shouldForwardMetadataToDataFlow() {
+            var startMessage = createStartMessage();
+            var expectedMetadata = startMessage.metadata();
+
+            var dataplane = Dataplane.newInstance()
+                    .onStart(dataFlow -> {
+                        assertThat(dataFlow.getMetadata())
+                                .isEqualTo(expectedMetadata);
+
+                        return Result.success(dataFlow);
+                    })
+                    .build();
+
+            dataplane.registerControlPlane(new ControlPlaneRegistrationMessage("controlplaneId", URI.create(controlPlane.baseUrl())));
+            dataplane.start("controlplaneId", startMessage);
+            controlPlane.stop();
+
+            var result = dataplane.notifyCompleted("dataFlowId");
+
+            assertThat(result.failed()).isTrue();
+            assertThatThrownBy(result::orElseThrow).isExactlyInstanceOf(ConnectException.class);
         }
     }
 
@@ -227,5 +252,9 @@ class DataplaneTest {
 
     private DataFlowPrepareMessage createPrepareMessage() {
         return MessageFactory.createPrepareMessage("dataFlowId", "Something-PUSH");
+    }
+
+    private DataFlowStartMessage createStartMessage() {
+        return MessageFactory.createStartMessage("dataFlowId", "Something-PUSH");
     }
 }
