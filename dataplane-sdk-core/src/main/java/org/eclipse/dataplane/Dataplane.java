@@ -65,8 +65,8 @@ import java.util.Set;
 import java.util.UUID;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
-import static tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static jakarta.ws.rs.core.HttpHeaders.AUTHORIZATION;
+import static tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
 public class Dataplane {
 
@@ -150,6 +150,7 @@ public class Dataplane {
                 .map(controlPlane -> DataFlow.newInstance()
                         .id(message.dataFlowId())
                         .state(DataFlow.State.INITIATING)
+                        .metadata(message.metadata())
                         .dataAddress(message.dataAddress())
                         .callbackAddress(controlPlane.getEndpoint())
                         .profile(message.profile())
